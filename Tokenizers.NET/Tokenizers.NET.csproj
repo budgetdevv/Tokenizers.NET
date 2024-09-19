@@ -1,0 +1,146 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+    <PropertyGroup>
+        <TargetFramework>net9.0</TargetFramework>
+        <Nullable>enable</Nullable>
+        <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+        <RuntimeIdentifiers>win-x64; osx-x64; osx-arm64; linux-x64</RuntimeIdentifiers>
+    </PropertyGroup>
+    
+    <PropertyGroup>
+        <!-- Path to the Rust project directory, relative to this .csproj file -->
+        <RustProjectPath>$(MSBuildProjectDirectory)/../Native</RustProjectPath>
+
+        <!-- Directory where Cargo will output the built libraries -->
+        <CargoTargetDirectory>$(RustProjectPath)/target</CargoTargetDirectory>
+    </PropertyGroup>
+
+    <!-- OS detection -->
+    <PropertyGroup>
+        <IsWindows Condition="'$([System.Runtime.InteropServices.RuntimeInformation]::IsOSPlatform($([System.Runtime.InteropServices.OSPlatform]::Windows)))' == 'true'">true</IsWindows>
+        <IsOSX Condition="'$([System.Runtime.InteropServices.RuntimeInformation]::IsOSPlatform($([System.Runtime.InteropServices.OSPlatform]::OSX)))' == 'true'">true</IsOSX>
+        <IsLinux Condition="'$([System.Runtime.InteropServices.RuntimeInformation]::IsOSPlatform($([System.Runtime.InteropServices.OSPlatform]::Linux)))' == 'true'">true</IsLinux>
+    </PropertyGroup>
+
+    <!-- Architecture detection -->
+    <PropertyGroup>
+        <Architecture>$([System.Runtime.InteropServices.RuntimeInformation]::ProcessArchitecture)</Architecture>
+        <IsX64 Condition="'$(Architecture)' == 'X64'">true</IsX64>
+        <IsArm64 Condition="'$(Architecture)' == 'Arm64'">true</IsArm64>
+    </PropertyGroup>
+
+    <!-- Output detection results -->
+    <Target Name="OutputDetectionResults" AfterTargets="Build">
+        <Message Importance="High" Condition="'$(IsWindows)' == 'true'" Text="OS: Windows" />
+        <Message Importance="High" Condition="'$(IsOSX)' == 'true'" Text="OS: OSX" />
+        <Message Importance="High" Condition="'$(IsLinux)' == 'true'" Text="OS: Linux" />
+        <Message Importance="High" Text="Detected Architecture: $(Architecture)" />
+        <Message Importance="High" Text="Is X64: $(IsX64)" />
+        <Message Importance="High" Text="Is ARM64: $(IsArm64)" />
+        <Message Importance="High" Text="Cargo Target Directory: $(CargoTargetDirectory)" />
+    </Target>
+
+    <!-- Pre-build step: Build the Rust project -->
+    <Target Name="BuildRustLibraryWin64" BeforeTargets="Build">
+        <Exec Command="cargo build --release --target x86_64-pc-windows-msvc"
+              WorkingDirectory="$(RustProjectPath)"
+              ContinueOnError="true" />
+
+        <Message Importance="High" Text="Rust build completed. Library should be at: $(CargoTargetDirectory)/x86_64-pc-windows-msvc/release/tokenizers_net.dll" />
+    </Target>
+
+    <Target Name="BuildRustLibraryOSX64" BeforeTargets="Build">
+        <Exec Command="cargo build --release --target x86_64-apple-darwin"
+              WorkingDirectory="$(RustProjectPath)"
+              ContinueOnError="true" />
+
+        <Message Importance="High" Text="Rust build completed. Library should be at: $(CargoTargetDirectory)/x86_64-apple-darwin/release/tokenizers_net.dylib" />
+    </Target>
+
+    <Target Name="BuildRustLibraryOSXARM64" BeforeTargets="Build">
+        <Exec Command="cargo build --release --target aarch64-apple-darwin"
+              WorkingDirectory="$(RustProjectPath)"
+              ContinueOnError="true" />
+
+        <Message Importance="High" Text="Rust build completed. Library should be at: $(CargoTargetDirectory)/aarch64-apple-darwin/release/tokenizers_net.dylib" />
+    </Target>
+
+    <Target Name="BuildRustLibraryLinux64" BeforeTargets="Build">
+        <Exec Command="cargo build --release --target x86_64-unknown-linux-gnu"
+              WorkingDirectory="$(RustProjectPath)"
+              ContinueOnError="true" />
+
+        <Message Importance="High" Text="Rust build completed. Library should be at: $(CargoTargetDirectory)/x86_64-unknown-linux-gnu/release/tokenizers_net.so" />
+    </Target>
+
+
+    <!-- Copy Rust library to output directory -->
+    <Target Name="CopyRustLibraryWin64" AfterTargets="Build">
+        <PropertyGroup>
+            <NativeLibraryPath>$(CargoTargetDirectory)/x86_64-pc-windows-msvc/release/tokenizers_net.dll</NativeLibraryPath>
+            <NativeLibraryDestination>$(OutputPath)/runtime/win-x64/native/tokenizers_net.dll</NativeLibraryDestination>
+        </PropertyGroup>
+
+        <Copy SourceFiles="$(NativeLibraryPath)"
+              DestinationFiles="$(NativeLibraryDestination)"
+              SkipUnchangedFiles="true"
+              ContinueOnError="true" />
+
+        <Message Importance="High" Text="Copied Rust library to: $(NativeLibraryDestination)" />
+    </Target>
+
+    <Target Name="CopyRustLibraryOSX64" AfterTargets="Build">
+        <PropertyGroup>
+            <NativeLibraryPath>$(CargoTargetDirectory)/x86_64-apple-darwin/release/tokenizers_net.dylib</NativeLibraryPath>
+            <NativeLibraryDestination>$(OutputPath)/runtime/osx-x64/native/tokenizers_net.dylib</NativeLibraryDestination>
+        </PropertyGroup>
+
+        <Copy SourceFiles="$(NativeLibraryPath)"
+              DestinationFiles="$(NativeLibraryDestination)"
+              SkipUnchangedFiles="true"
+              ContinueOnError="true" />
+
+        <Message Importance="High" Text="Copied Rust library to: $(NativeLibraryDestination)" />
+    </Target>
+
+    <Target Name="CopyRustLibraryOSXARM64" AfterTargets="Build">
+        <PropertyGroup>
+            <NativeLibraryPath>$(CargoTargetDirectory)/aarch64-apple-darwin/release/tokenizers_net.dylib</NativeLibraryPath>
+            <NativeLibraryDestination>$(OutputPath)/runtime/osx-arm64/native/tokenizers_net.dylib</NativeLibraryDestination>
+        </PropertyGroup>
+
+        <Copy SourceFiles="$(NativeLibraryPath)"
+              DestinationFiles="$(NativeLibraryDestination)"
+              SkipUnchangedFiles="true"
+              ContinueOnError="true" />
+
+        <Message Importance="High" Text="Copied Rust library to: $(NativeLibraryDestination)" />
+    </Target>
+
+    <Target Name="CopyRustLibraryLinux64" AfterTargets="Build">
+        <PropertyGroup>
+            <NativeLibraryPath>$(CargoTargetDirectory)/x86_64-unknown-linux-gnu/release/tokenizers_net.so</NativeLibraryPath>
+            <NativeLibraryDestination>$(OutputPath)/runtime/linux-x64/native/tokenizers_net.so</NativeLibraryDestination>
+        </PropertyGroup>
+
+        <Copy SourceFiles="$(NativeLibraryPath)"
+              DestinationFiles="$(NativeLibraryDestination)"
+              SkipUnchangedFiles="true"
+              ContinueOnError="true" />
+
+        <Message Importance="High" Text="Copied Rust library to: $(NativeLibraryDestination)" />
+    </Target>
+
+
+    <!--  https://youtrack.jetbrains.com/issue/RIDER-26906 -->
+    <Target Name="ExcludeAnnoyingDylib" AfterTargets="ResolveAssemblyReferences">
+        <ItemGroup>
+            <None Update="@(None)">
+                <Visible>false</Visible>
+            </None>
+        </ItemGroup>
+    </Target>
+    
+    
+
+</Project>
