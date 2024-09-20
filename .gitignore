@@ -466,3 +466,6 @@ appsettings.json
 
 # Ignore .idea
 .idea/
+
+# Ignore Generated C#
+/Native/GeneratedCSharp/NativeMethods.cs
