@@ -10,7 +10,12 @@
     <ItemGroup>
       <PackageReference Include="Tokenizers.NET" Version="1.0.0" />
     </ItemGroup>
-
+    
+    <ItemGroup>
+        <Content Include="FlorenceTokenizer.json" CopyToOutputDirectory="PreserveNewest">
+        </Content>
+    </ItemGroup>
+    
 <!--    <ItemGroup>-->
 <!--        <ProjectReference Include="..\Tokenizers.NET\Tokenizers.NET.csproj" />-->
 <!--    </ItemGroup>-->
