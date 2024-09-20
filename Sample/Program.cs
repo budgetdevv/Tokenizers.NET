@@ -10,7 +10,7 @@ namespace Sample
             
             public static uint ExpectedMaxBatches => 5;
             
-            public static string TokenizerJsonPath => "tokenizer.json";
+            public static string TokenizerJsonPath => "FlorenceTokenizer.json";
         }
 
         private static string GenerateString(char val, int length)
@@ -29,13 +29,15 @@ namespace Sample
         private static void Main(string[] args)
         {
             var tokenizer = new Tokenizer<Config>();
+
+            Console.WriteLine($"Truncates: {tokenizer.Truncate}");
             
             ReadOnlySpan<string> inputTexts = 
             [
-                // "Sunset",
-                // "I'm fine, thank you!",
-                // "I love C#!",
-                GenerateString('H', 5000),
+                "Sunset",
+                "I'm fine, thank you!",
+                "I love C#!",
+                // GenerateString('H', 5000),
             ];
 
             var output = tokenizer.Tokenize(inputTexts);
@@ -48,17 +50,17 @@ namespace Sample
             {
                 foreach (var overflow in token.OverflowingTokens.AsReadOnlySpan())
                 {
-                    Console.WriteLine($"Overflow: {overflow.IDs.AsReadOnlySpan().GetSpanPrintString()}\n\n");
+                    // Console.WriteLine($"Overflow: {overflow.IDs.AsReadOnlySpan().GetSpanPrintString()}\n\n");
 
-                    // Console.WriteLine($"Overflow Length: {overflow.IDs.Length}");
+                    Console.WriteLine($"Overflow Length: {overflow.IDs.Length}");
                 }
                 
-//                 Console.WriteLine(
-//                 $"""
-//                 Text: {inputTexts[index++]}
-//                 Input IDs: {token.IDs.AsReadOnlySpan().GetSpanPrintString()}
-//                 Attention Mask: {token.AttentionMask.AsReadOnlySpan().GetSpanPrintString()}
-//                 """);
+                Console.WriteLine(
+                $"""
+                Text: {inputTexts[index++]}
+                Input IDs: {token.IDs.AsReadOnlySpan().GetSpanPrintString()}
+                Attention Mask: {token.AttentionMask.AsReadOnlySpan().GetSpanPrintString()}
+                """);
 
                 Console.WriteLine($"Input IDs Length: {token.IDs.Length}"); 
                 

@@ -1,5 +1,6 @@
 use std::alloc::{ dealloc, Layout };
 use std::mem::ManuallyDrop;
+use std::ptr::null;
 use tokenizers::tokenizer::Tokenizer;
 use tokenizers::Encoding;
 
@@ -145,7 +146,8 @@ pub struct TokenizeOutput
 
 impl TokenizeOutput
 {
-    pub unsafe fn from_encoded_tokens(encoded_tokens: Encoding) -> Self
+    #[inline(always)]
+    pub unsafe fn from_encoded_tokens(encoded_tokens: Encoding, truncate: bool) -> Self
     {
         let encoded_tokens = Box::new(encoded_tokens);
 
@@ -153,22 +155,35 @@ impl TokenizeOutput
         let attention_mask = ReadOnlyBuffer::from_slice(encoded_tokens.get_attention_mask());
         let special_tokens_mask = ReadOnlyBuffer::from_slice(encoded_tokens.get_special_tokens_mask());
 
-        let mut overflowing_tokens = encoded_tokens
-            .get_overflowing()
-            .iter()
-            .map(|overflowing_token|
-                TokenizeOutputOverflowedToken::from_overflowing_encoded_tokens(overflowing_token))
-            .collect::<Vec<TokenizeOutputOverflowedToken>>();
+        let overflowing_tokens: ReadOnlyBuffer<TokenizeOutputOverflowedToken>;
 
-        // println!("Overflowing tokens: {:?}", overflowing_tokens.as_slice().len());
+        let overflowing_tokens_free_handle: *const FreeData;
 
-        let overflowing_tokens_free_handle = FreeData::from_pointer_and_box(
-            &mut *(overflowing_tokens.as_mut_ptr())
-        );
+        if (truncate)
+        {
+            let mut overflowing_tokens_vec = encoded_tokens
+                .get_overflowing()
+                .iter()
+                .map(|overflowing_token|
+                    TokenizeOutputOverflowedToken::from_overflowing_encoded_tokens(overflowing_token))
+                .collect::<Vec<TokenizeOutputOverflowedToken>>();
 
-        let mut overflowing_tokens = ManuallyDrop::new(overflowing_tokens);
+            // println!("Overflowing tokens: {:?}", overflowing_tokens.as_slice().len());
 
-        let overflowing_tokens = ReadOnlyBuffer::from_vec(&mut overflowing_tokens);
+            overflowing_tokens_free_handle = FreeData::from_pointer_and_box(
+                &mut *(overflowing_tokens_vec.as_mut_ptr())
+            );
+
+            overflowing_tokens = ReadOnlyBuffer::from_vec(&mut overflowing_tokens_vec);
+
+            let _ = ManuallyDrop::new(overflowing_tokens_vec);
+        }
+
+        else
+        {
+            overflowing_tokens = ReadOnlyBuffer::empty();
+            overflowing_tokens_free_handle = null();
+        }
 
         // into_raw() keeps encoded_tokens alive
         let encoded_tokens_ptr = Box::into_raw(encoded_tokens);
@@ -199,6 +214,7 @@ pub struct TokenizeOutputOverflowedToken
 
 impl TokenizeOutputOverflowedToken
 {
+    #[inline(always)]
     pub unsafe fn from_overflowing_encoded_tokens(encoded_tokens: &Encoding) -> Self
     {
         let ids = ReadOnlyBuffer::from_slice(encoded_tokens.get_ids());
@@ -240,6 +256,24 @@ pub unsafe extern "C" fn tokenizer_encode(
     tokenizer_ptr: *mut Tokenizer,
     text_buffer: ReadOnlyBuffer<u8>) -> TokenizeOutput
 {
+    return tokenizer_encode_core(tokenizer_ptr, text_buffer, true);
+}
+
+#[no_mangle]
+pub unsafe extern "C" fn tokenizer_encode_non_truncating(
+    tokenizer_ptr: *mut Tokenizer,
+    text_buffer: ReadOnlyBuffer<u8>) -> TokenizeOutput
+{
+    return tokenizer_encode_core(tokenizer_ptr, text_buffer, false);
+}
+
+#[inline(always)]
+pub unsafe extern "C" fn tokenizer_encode_core(
+    tokenizer_ptr: *mut Tokenizer,
+    text_buffer: ReadOnlyBuffer<u8>,
+    truncate: bool)
+    -> TokenizeOutput
+{
     let tokenizer = &*tokenizer_ptr;
 
     let text = std::str::from_utf8_unchecked(text_buffer.as_slice());
@@ -252,7 +286,7 @@ pub unsafe extern "C" fn tokenizer_encode(
         Err(err) => panic!("{}", err),
     };
 
-    return TokenizeOutput::from_encoded_tokens(encoded_tokens);
+    return TokenizeOutput::from_encoded_tokens(encoded_tokens, truncate);
 }
 
 #[no_mangle]
@@ -260,6 +294,25 @@ pub unsafe extern "C" fn tokenizer_encode_batch(
     tokenizer_ptr: *mut Tokenizer,
     text_buffers: ReadOnlyBuffer<ReadOnlyBuffer<u8>>,
     output_buffer: Buffer<TokenizeOutput>)
+{
+    tokenizer_encode_batch_core(tokenizer_ptr, text_buffers, output_buffer, true);
+}
+
+#[no_mangle]
+pub unsafe extern "C" fn tokenizer_encode_batch_non_truncating(
+    tokenizer_ptr: *mut Tokenizer,
+    text_buffers: ReadOnlyBuffer<ReadOnlyBuffer<u8>>,
+    output_buffer: Buffer<TokenizeOutput>)
+{
+    tokenizer_encode_batch_core(tokenizer_ptr, text_buffers, output_buffer, false);
+}
+
+#[inline(always)]
+pub unsafe extern "C" fn tokenizer_encode_batch_core(
+    tokenizer_ptr: *mut Tokenizer,
+    text_buffers: ReadOnlyBuffer<ReadOnlyBuffer<u8>>,
+    output_buffer: Buffer<TokenizeOutput>,
+    truncate: bool)
 {
     let tokenizer = &*tokenizer_ptr;
 
@@ -283,7 +336,7 @@ pub unsafe extern "C" fn tokenizer_encode_batch(
 
     for encoded_token in encoded_tokens
     {
-        *current_ptr = TokenizeOutput::from_encoded_tokens(encoded_token);
+        *current_ptr = TokenizeOutput::from_encoded_tokens(encoded_token, truncate);
 
         current_ptr = current_ptr.add(1);
     }

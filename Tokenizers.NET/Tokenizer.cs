@@ -20,7 +20,7 @@ namespace Tokenizers.NET
         public static abstract string TokenizerJsonPath { get; }
     }
 
-    public unsafe partial struct Tokenizer<ConfigT>: IDisposable
+    public unsafe struct Tokenizer<ConfigT>: IDisposable
         where ConfigT: struct, ITokenizerConfig
     {
         private static readonly bool TRUNCATE;
@@ -156,6 +156,8 @@ namespace Tokenizers.NET
         
         private readonly nint TokenizerHandle;
         
+        public bool Truncate => TRUNCATE;
+        
         public Tokenizer()
         {
             var tokenizerData = TOKENIZER_DATA;
@@ -266,13 +268,16 @@ namespace Tokenizers.NET
             var outputLengthNative = (nuint) outputs.Length;
             
             ref var outputStart = ref MemoryMarshal.GetReference(outputs);
+
+            var truncate = TRUNCATE;
             
             if (outputsPrePinned)
             {
                 TokenizerNativeMethods.TokenizerEncodeBatch(
                     tokenizerPtr: tokenizerHandle,
                     textNativeBuffers: readonlyU8Strings,
-                    outputNativeBuffer: new(ref outputStart, outputLengthNative)
+                    outputNativeBuffer: new(ref outputStart, outputLengthNative),
+                    truncate
                 );
             }
 
@@ -283,7 +288,8 @@ namespace Tokenizers.NET
                     TokenizerNativeMethods.TokenizerEncodeBatch(
                         tokenizerPtr: tokenizerHandle,
                         textNativeBuffers: readonlyU8Strings,
-                        outputNativeBuffer: new(outputsPtr, outputLengthNative)
+                        outputNativeBuffer: new(outputsPtr, outputLengthNative),
+                        truncate
                     );
                 }
             }
