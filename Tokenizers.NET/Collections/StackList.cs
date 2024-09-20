@@ -4,7 +4,10 @@ using System.Runtime.InteropServices;
 
 namespace Tokenizers.NET.Collections
 {
-    public unsafe ref struct StackList<T>: IDisposable
+    public unsafe ref struct StackList<T>
+        #if NET9_0_OR_GREATER
+        : IDisposable
+        #endif
         where T : unmanaged
     {
         private T* Ptr;

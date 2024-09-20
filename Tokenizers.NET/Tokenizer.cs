@@ -49,7 +49,10 @@ namespace Tokenizers.NET
                 }
             }
 
-            public ref struct Handle: IDisposable
+            public ref struct Handle
+                #if NET9_0_OR_GREATER
+                : IDisposable
+                #endif
             {
                 private readonly ref TempFixedAllocator Allocator;
 
