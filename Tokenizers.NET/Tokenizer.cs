@@ -180,7 +180,6 @@ namespace Tokenizers.NET
             );
         }
         
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void Tokenize(ReadOnlySpan<string> inputs, NativeMemory<TokenizeOutput> outputs)
         {
             TokenizeInternal(
@@ -191,7 +190,6 @@ namespace Tokenizers.NET
             );
         }
         
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public NativeMemory<TokenizeOutput> Tokenize(ReadOnlySpan<string> inputs)
         {
             var outputs = new NativeMemory<TokenizeOutput>((nuint) inputs.Length);
@@ -207,6 +205,7 @@ namespace Tokenizers.NET
         }
 
         [SkipLocalsInit]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private void TokenizeInternal(
             ReadOnlySpan<string> inputs,
             Span<TokenizeOutput> outputs,
