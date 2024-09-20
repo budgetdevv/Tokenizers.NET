@@ -77,9 +77,8 @@ impl<T> ReadOnlyBuffer<T>
         std::slice::from_raw_parts(self.ptr, self.length)
     }
 
-    pub fn from_vec(vec: Vec<T>) -> Self
+    pub fn from_vec(vec: &mut Vec<T>) -> Self
     {
-        let mut vec = ManuallyDrop::new(vec);
         let ptr = vec.as_mut_ptr();
         let length = vec.len();
 
@@ -141,6 +140,7 @@ pub struct TokenizeOutput
     pub special_tokens_mask: ReadOnlyBuffer<u32>,
     pub overflowing_tokens: ReadOnlyBuffer<TokenizeOutputOverflowedToken>,
     pub original_output_free_handle: *const FreeData,
+    pub overflowing_tokens_free_handle: *const FreeData,
 }
 
 impl TokenizeOutput
@@ -153,13 +153,22 @@ impl TokenizeOutput
         let attention_mask = ReadOnlyBuffer::from_slice(encoded_tokens.get_attention_mask());
         let special_tokens_mask = ReadOnlyBuffer::from_slice(encoded_tokens.get_special_tokens_mask());
 
-        let overflowing_tokens = encoded_tokens
+        let mut overflowing_tokens = encoded_tokens
             .get_overflowing()
             .iter()
-            .map(|x| TokenizeOutputOverflowedToken::from_overflowing_encoded_tokens(x))
+            .map(|overflowing_token|
+                TokenizeOutputOverflowedToken::from_overflowing_encoded_tokens(overflowing_token))
             .collect::<Vec<TokenizeOutputOverflowedToken>>();
 
-        let overflowing_tokens = ReadOnlyBuffer::from_vec(overflowing_tokens);
+        // println!("Overflowing tokens: {:?}", overflowing_tokens.as_slice().len());
+
+        let overflowing_tokens_free_handle = FreeData::from_pointer_and_box(
+            &mut *(overflowing_tokens.as_mut_ptr())
+        );
+
+        let mut overflowing_tokens = ManuallyDrop::new(overflowing_tokens);
+
+        let overflowing_tokens = ReadOnlyBuffer::from_vec(&mut overflowing_tokens);
 
         // into_raw() keeps encoded_tokens alive
         let encoded_tokens_ptr = Box::into_raw(encoded_tokens);
@@ -175,19 +184,8 @@ impl TokenizeOutput
             special_tokens_mask,
             overflowing_tokens,
             original_output_free_handle,
+            overflowing_tokens_free_handle,
         };
-    }
-
-    pub unsafe fn from_overflowing_encoded_tokens() -> Self
-    {
-        TokenizeOutput
-        {
-            ids: ReadOnlyBuffer::empty(),
-            attention_mask: ReadOnlyBuffer::empty(),
-            special_tokens_mask: ReadOnlyBuffer::empty(),
-            overflowing_tokens: ReadOnlyBuffer::empty(),
-            original_output_free_handle: std::ptr::null(),
-        }
     }
 }
 
@@ -300,4 +298,18 @@ pub unsafe extern "C" fn free_with_handle(handle: *mut FreeData)
     // println!("With layout {:?}", free_data.layout);
 
     dealloc(free_data.ptr, free_data.layout);
+}
+
+#[no_mangle]
+pub unsafe extern "C" fn free_with_multiple_handles(handle: ReadOnlyBuffer<*mut FreeData>)
+{
+    for free_data in handle.as_slice()
+    {
+        let free_data = Box::from_raw(*free_data);
+
+        // println!("Freeing memory at {:p}", free_data.ptr);
+        // println!("With layout {:?}", free_data.layout);
+
+        dealloc(free_data.ptr, free_data.layout);
+    }
 }

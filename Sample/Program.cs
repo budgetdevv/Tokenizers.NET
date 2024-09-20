@@ -12,6 +12,19 @@ namespace Sample
             
             public static string TokenizerJsonPath => "tokenizer.json";
         }
+
+        private static string GenerateString(char val, int length)
+        {
+            return string.Create(length, 
+                length, 
+                (buffer, len) =>
+            {
+                for (var i = 0; i < len; i++)
+                {
+                    buffer[i] = val;
+                }
+            });
+        }
         
         private static void Main(string[] args)
         {
@@ -19,9 +32,10 @@ namespace Sample
             
             ReadOnlySpan<string> inputTexts = 
             [
-                "Sunset",
-                "I'm fine, thank you!",
-                "I love C#!"
+                // "Sunset",
+                // "I'm fine, thank you!",
+                // "I love C#!",
+                GenerateString('H', 5000),
             ];
 
             var output = tokenizer.Tokenize(inputTexts);
@@ -32,17 +46,24 @@ namespace Sample
             
             foreach (var token in outputSpan)
             {
-                Console.WriteLine(
-                $"""
-                Text: {inputTexts[index++]}
-                Input IDs: {token.IDs.AsReadOnlySpan().GetSpanPrintString()}
-                Attention Mask: {token.AttentionMask.AsReadOnlySpan().GetSpanPrintString()}
+                foreach (var overflow in token.OverflowingTokens.AsReadOnlySpan())
+                {
+                    Console.WriteLine($"Overflow: {overflow.IDs.AsReadOnlySpan().GetSpanPrintString()}\n\n");
+
+                    // Console.WriteLine($"Overflow Length: {overflow.IDs.Length}");
+                }
                 
-                """);
+//                 Console.WriteLine(
+//                 $"""
+//                 Text: {inputTexts[index++]}
+//                 Input IDs: {token.IDs.AsReadOnlySpan().GetSpanPrintString()}
+//                 Attention Mask: {token.AttentionMask.AsReadOnlySpan().GetSpanPrintString()}
+//                 """);
+
+                Console.WriteLine($"Input IDs Length: {token.IDs.Length}"); 
                 
                 token.Dispose();
             }
-            
             
             output.Dispose();
             

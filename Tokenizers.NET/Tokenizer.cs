@@ -5,6 +5,7 @@ using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Text;
+using System.Text.Json;
 using Tokenizers.NET.Collections;
 using Tokenizers.NET.Helpers;
 
@@ -18,10 +19,12 @@ namespace Tokenizers.NET
         
         public static abstract string TokenizerJsonPath { get; }
     }
-    
+
     public unsafe partial struct Tokenizer<ConfigT>: IDisposable
         where ConfigT: struct, ITokenizerConfig
     {
+        private static readonly bool TRUNCATE;
+        
         private struct TempFixedAllocator: IDisposable
         {
             private static readonly int BUFFER_SIZE = Encoding.UTF8.GetMaxByteCount(ConfigT.ExpectedMaxInputLength.ToSignedUnchecked());
@@ -139,9 +142,14 @@ namespace Tokenizers.NET
         {
             var bytes = File.ReadAllBytes(ConfigT.TokenizerJsonPath);
             
-            var tokenizerData = TOKENIZER_DATA = AllocationHelpers.AllocatePinnedUninitialized<byte>(bytes.Length);
+            var tokenizerDataBytes = TOKENIZER_DATA = AllocationHelpers
+                .AllocatePinnedUninitialized<byte>(bytes.Length);
             
-            bytes.AsSpan().CopyTo(tokenizerData);
+            bytes.AsSpan().CopyTo(tokenizerDataBytes);
+
+            var tokenizerData = JsonSerializer.Deserialize<TokenizerData>(tokenizerDataBytes);
+            
+            TRUNCATE = tokenizerData.Truncation != null;
         }
         
         private TempFixedAllocator Allocator;
@@ -291,29 +299,5 @@ namespace Tokenizers.NET
             Allocator.Dispose();
             TokenizerNativeMethods.FreeTokenizer(TokenizerHandle);
         }
-    }
-
-    internal static unsafe class TokenizerNativeMethods
-    {
-        private const string DLL_NAME = "libtokenizers_net";
-
-        [DllImport(DLL_NAME, EntryPoint = "allocate_tokenizer", CallingConvention = CallingConvention.Cdecl, ExactSpelling = true)]
-        public static extern nint AllocateTokenizer(byte* jsonBytesPtr, nuint jsonBytesLength);
-        
-        [DllImport(DLL_NAME, EntryPoint = "free_tokenizer", CallingConvention = CallingConvention.Cdecl, ExactSpelling = true)]
-        public static extern nint FreeTokenizer(nint tokenizerHandle);
-
-        [DllImport(DLL_NAME, EntryPoint = "tokenizer_encode", CallingConvention = CallingConvention.Cdecl, ExactSpelling = true)]
-        public static extern TokenizeOutput TokenizerEncode(nint tokenizerPtr, ReadOnlyNativeBuffer<byte> textNativeBuffer);
-
-        [DllImport(DLL_NAME, EntryPoint = "tokenizer_encode_batch", CallingConvention = CallingConvention.Cdecl, ExactSpelling = true)]
-        public static extern void TokenizerEncodeBatch(
-            nint tokenizerPtr, 
-            ReadOnlyNativeBuffer<ReadOnlyNativeBuffer<byte>> textNativeBuffers, 
-            NativeBuffer<TokenizeOutput> outputNativeBuffer
-        );
-
-        [DllImport(DLL_NAME, EntryPoint = "free_with_handle", CallingConvention = CallingConvention.Cdecl, ExactSpelling = true)]
-        public static extern void FreeWithHandle(nint handle);
     }
 }
