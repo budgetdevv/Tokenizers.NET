@@ -35,12 +35,28 @@ namespace Tokenizers.NET
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void Dispose()
         {
-            var ptr = stackalloc nint[2];
+            var originalOutputFreeHandle = OriginalOutputFreeHandle;
+            var overflowingTokensHandle = OverflowingTokensFreeHandle;
             
-            *ptr = OriginalOutputFreeHandle;
-            *(ptr + 1) = OverflowingTokensFreeHandle;
-            
-            TokenizerNativeMethods.FreeWithMultipleHandles(new(ptr, 2));
+            if (overflowingTokensHandle == nint.Zero)
+            {
+                TokenizerNativeMethods.FreeWithHandle(originalOutputFreeHandle);
+            }
+
+            else
+            {
+                #if DEBUG
+                TokenizerNativeMethods.FreeWithHandle(originalOutputFreeHandle);
+                TokenizerNativeMethods.FreeWithHandle(overflowingTokensHandle);
+                #else
+                var ptr = stackalloc nint[2];
+                
+                *ptr = originalOutputFreeHandle;
+                *(ptr + 1) = overflowingTokensHandle;
+                
+                TokenizerNativeMethods.FreeWithMultipleHandles(new(ptr, 2));
+                #endif
+            }
         }
     }
 }

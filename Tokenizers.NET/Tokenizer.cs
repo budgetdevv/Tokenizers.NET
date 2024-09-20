@@ -23,11 +23,9 @@ namespace Tokenizers.NET
     public unsafe struct Tokenizer<ConfigT>: IDisposable
         where ConfigT: struct, ITokenizerConfig
     {
-        private static readonly bool TRUNCATE;
-        
         private struct TempFixedAllocator: IDisposable
         {
-            private static readonly int BUFFER_SIZE = Encoding.UTF8.GetMaxByteCount(ConfigT.ExpectedMaxInputLength.ToSignedUnchecked());
+            public static readonly int BUFFER_SIZE = Encoding.UTF8.GetMaxByteCount(ConfigT.ExpectedMaxInputLength.ToSignedUnchecked());
             
             private byte[][] Buffers;
 
@@ -43,6 +41,11 @@ namespace Tokenizers.NET
                 for (var i = 0; i < maxExpectedBatches; i++)
                 {
                     buffers[i] = AllocationHelpers.AllocatePinnedUninitialized<byte>(BUFFER_SIZE);
+                }
+                
+                if (Buffers.Length == 0)
+                {
+                    throw new InvalidOperationException("Buffers length cannot be zero.");
                 }
             }
 
@@ -130,12 +133,20 @@ namespace Tokenizers.NET
                 return newAllocation;
             }
 
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            public byte[] GetFirstAllocationUnsafely()
+            {
+                return MemoryMarshal.GetArrayDataReference(Buffers);
+            } 
+
             public void Dispose()
             {
                 Buffers = null;
             }
         }
 
+        private static readonly bool TRUNCATE;
+        
         private static readonly byte[] TOKENIZER_DATA;
         
         static Tokenizer()
@@ -177,6 +188,58 @@ namespace Tokenizers.NET
                 outputsPrePinned: false,
                 skipLengthCheck: false
             );
+        }
+        
+        [SkipLocalsInit]
+        public TokenizeOutput Tokenize(string input)
+        {
+            Span<byte> allocation;
+
+            var inputLength = (nuint) input.Length;
+
+            Unsafe.SkipInit(out NativeMemory<byte> nativeMemory);
+            
+            var useNativeMemory = inputLength > ConfigT.ExpectedMaxInputLength;
+            
+            // ReSharper disable once AssignmentInConditionalExpression
+            if (!useNativeMemory)
+            {
+                const int MAX_STACK_ALLOC = 4096;
+                
+                // This branch is free
+                if (MAX_STACK_ALLOC <= TempFixedAllocator.BUFFER_SIZE)
+                {
+                    // A result of a stackalloc expression of this type in this context may be exposed outside of the containing method
+                    #pragma warning disable CS9081
+                    allocation = stackalloc byte[MAX_STACK_ALLOC];
+                    #pragma warning restore CS9081
+                }
+
+                else
+                {
+                    allocation = Allocator.GetFirstAllocationUnsafely();
+                }
+            }
+
+            else
+            {
+                nativeMemory = new(inputLength);
+                        
+                allocation = nativeMemory.Memory.AsSpan();
+            }
+
+            Encoding.UTF8.TryGetBytes(input, allocation, out var bytesWritten);
+                
+            var u8String = new ReadOnlyNativeBuffer<byte>(ref MemoryMarshal.GetReference(allocation), (nuint) bytesWritten);
+            
+            var result = TokenizerNativeMethods.TokenizerEncode(TokenizerHandle, u8String, TRUNCATE);
+            
+            if (useNativeMemory)
+            {
+                nativeMemory.Dispose();
+            }
+            
+            return result;
         }
         
         public void Tokenize(ReadOnlySpan<string> inputs, NativeMemory<TokenizeOutput> outputs)

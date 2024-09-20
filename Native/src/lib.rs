@@ -155,14 +155,15 @@ impl TokenizeOutput
         let attention_mask = ReadOnlyBuffer::from_slice(encoded_tokens.get_attention_mask());
         let special_tokens_mask = ReadOnlyBuffer::from_slice(encoded_tokens.get_special_tokens_mask());
 
+        let overflowing_tokens_slice = encoded_tokens.get_overflowing();
+
         let overflowing_tokens: ReadOnlyBuffer<TokenizeOutputOverflowedToken>;
 
         let overflowing_tokens_free_handle: *const FreeData;
 
-        if (truncate)
+        if (truncate && overflowing_tokens_slice.len() > 0)
         {
-            let mut overflowing_tokens_vec = encoded_tokens
-                .get_overflowing()
+            let mut overflowing_tokens_vec = overflowing_tokens_slice
                 .iter()
                 .map(|overflowing_token|
                     TokenizeOutputOverflowedToken::from_overflowing_encoded_tokens(overflowing_token))
@@ -174,9 +175,7 @@ impl TokenizeOutput
                 &mut *(overflowing_tokens_vec.as_mut_ptr())
             );
 
-            overflowing_tokens = ReadOnlyBuffer::from_vec(&mut overflowing_tokens_vec);
-
-            let _ = ManuallyDrop::new(overflowing_tokens_vec);
+            overflowing_tokens = ReadOnlyBuffer::from_vec(&mut ManuallyDrop::new(overflowing_tokens_vec));
         }
 
         else

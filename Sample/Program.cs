@@ -34,15 +34,15 @@ namespace Sample
             
             ReadOnlySpan<string> inputTexts = 
             [
-                "Sunset",
-                "I'm fine, thank you!",
-                "I love C#!",
-                // GenerateString('H', 5000),
+                // "Sunset",
+                // "I'm fine, thank you!",
+                // "I love C#!",
+                GenerateString('H', 4096),
             ];
 
-            var output = tokenizer.Tokenize(inputTexts);
+            var outputs = tokenizer.Tokenize(inputTexts);
             
-            var outputSpan = output.Memory.AsSpan();
+            var outputSpan = outputs.Memory.AsSpan();
 
             var index = 0;
             
@@ -67,11 +67,18 @@ namespace Sample
                 token.Dispose();
             }
             
+            outputs.Dispose();
+
+            var output = tokenizer.Tokenize("Hi");
+            
+            // Console.WriteLine(output.IDs.AsReadOnlySpan().GetSpanPrintString());
+            Console.WriteLine(output.OverflowingTokens.Length);
+            
             output.Dispose();
             
-            tokenizer.Dispose();
-
             Console.WriteLine("Done!");
+            
+            tokenizer.Dispose();
         }
     }
 }
