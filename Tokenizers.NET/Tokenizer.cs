@@ -169,7 +169,6 @@ namespace Tokenizers.NET
                 (nuint) tokenizerData.Length);
         }
         
-        [SkipLocalsInit]
         public void Tokenize(ReadOnlySpan<string> inputs, Span<TokenizeOutput> outputs)
         {
             TokenizeInternal(
