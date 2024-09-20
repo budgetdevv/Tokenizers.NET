@@ -11,4 +11,41 @@
       <ProjectReference Include="..\Tokenizers.NET\Tokenizers.NET.csproj" />
     </ItemGroup>
 
+    <PropertyGroup>
+        <RustProjectPath>$(MSBuildProjectDirectory)/../Native</RustProjectPath>
+
+        <!-- Directory where Cargo will output the built libraries -->
+        <CargoTargetDirectory>$(RustProjectPath)/target</CargoTargetDirectory>
+
+        <RustTargetOSXArm64>aarch64-apple-darwin</RustTargetOSXArm64>
+        <RustTargetOSXX64>x86_64-apple-darwin</RustTargetOSXX64>
+
+        <RustTargetWindowsX64>x86_64-pc-windows-gnu</RustTargetWindowsX64>
+
+        <RustTargetLinuxX64>x86_64-unknown-linux-gnu</RustTargetLinuxX64>
+        <RustTargetLinuxArm64>aarch64-unknown-linux-gnu</RustTargetLinuxArm64>
+    </PropertyGroup>
+    
+    <ItemGroup>
+<!--        &lt;!&ndash; Windows x64 &ndash;&gt;-->
+<!--        <Content Include="$(CargoTargetDirectory)/$(RustTargetWindowsX64)/release/tokenizers_net.dll"-->
+<!--                 CopyToOutputDirectory="PreserveNewest" />-->
+
+        <!-- macOS ARM64 -->
+        <Content Include="$(CargoTargetDirectory)/$(RustTargetOSXArm64)/release/libtokenizers_net.dylib"
+                 CopyToOutputDirectory="PreserveNewest" />
+
+<!--        &lt;!&ndash; macOS x64 &ndash;&gt;-->
+<!--        <Content Include="$(CargoTargetDirectory)/$(RustTargetOSXX64)/release/libtokenizers_net.dylib"-->
+<!--                 CopyToOutputDirectory="PreserveNewest" />-->
+
+<!--        &lt;!&ndash; Linux x64 &ndash;&gt;-->
+<!--        <Content Include="$(CargoTargetDirectory)/$(RustTargetLinuxX64)/release/libtokenizers_net.so"-->
+<!--                 CopyToOutputDirectory="PreserveNewest" />-->
+
+<!--        &lt;!&ndash; Linux ARM64 &ndash;&gt;-->
+<!--        <Content Include="$(CargoTargetDirectory)/$(RustTargetLinuxArm64)/release/libtokenizers_net.so"-->
+<!--                 CopyToOutputDirectory="PreserveNewest" />-->
+    </ItemGroup>
+
 </Project>
