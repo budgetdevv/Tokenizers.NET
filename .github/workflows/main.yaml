@@ -4,6 +4,9 @@ on:
     branches:
       - main
 
+permissions:
+  contents: write
+
 concurrency:
   group: ${{ github.ref }}
   cancel-in-progress: true
@@ -131,6 +134,8 @@ jobs:
         with:
           path: artifacts
       - name: Create Github Release
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           TAG="$(date -u +"v%Y.%m.%d.%H%M").${GITHUB_SHA::4}"
           echo "Tag: ${TAG}"
@@ -144,5 +149,3 @@ jobs:
               cd ..
           done
           gh release edit $TAG --draft=false
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
