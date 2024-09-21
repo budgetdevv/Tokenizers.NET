@@ -42,7 +42,7 @@
         
         <DownloadFile SourceUrl="https://github.com/budgetdevv/Tokenizers.NET/releases/latest/download/win-x64_tokenizers_net.dll"
             DestinationFolder="$(OutputPath)/runtimes/win-x64/native"
-                DestinationFileName="tokenizers_net.dll" />
+            DestinationFileName="tokenizers_net.dll" />
         
         <DownloadFile SourceUrl="https://github.com/budgetdevv/Tokenizers.NET/releases/latest/download/win-arm64_tokenizers_net.dll"
             DestinationFolder="$(OutputPath)/runtimes/win-arm64/native"
@@ -52,27 +52,33 @@
     <!-- Include native libraries from the latest release -->
     <ItemGroup>
         <!-- Windows x64 -->
-        <None Include="$(OutputPath)/runtimes/win-x64/native/tokenizers_net.dll" 
+        <None Include="$(OutputPath)/runtimes/win-x64/native/tokenizers_net.dll"
+              Pack="true"
               PackagePath="runtimes/win-x64/native/tokenizers_net.dll" />
         
         <!-- Windows ARM64 -->
-        <None Include="$(OutputPath)/runtimes/win-arm64/native/tokenizers_net.dll" 
+        <None Include="$(OutputPath)/runtimes/win-arm64/native/tokenizers_net.dll"
+              Pack="true"
               PackagePath="runtimes/win-arm64/native/tokenizers_net.dll" />
         
         <!-- macOS ARM64 -->
         <None Include="$(OutputPath)/runtimes/osx-arm64/native/libtokenizers_net.dylib"
+              Pack="true"
               PackagePath="runtimes/osx-arm64/native/libtokenizers_net.dylib" />
 
         <!-- macOS x64 -->
         <None Include="$(OutputPath)/runtimes/osx-x64/native/libtokenizers_net.dylib"
+              Pack="true"
               PackagePath="runtimes/osx-x64/native/libtokenizers_net.dylib" />
 
         <!-- Linux x64 -->
         <None Include="$(OutputPath)/runtimes/linux-x64/native/libtokenizers_net.so"
+              Pack="true"
               PackagePath="runtimes/linux-x64/native/libtokenizers_net.so" />
 
         <!-- Linux ARM64 -->
         <None Include="$(OutputPath)/runtimes/linux-arm64/native/libtokenizers_net.so"
+              Pack="true"
               PackagePath="runtimes/linux-arm64/native/libtokenizers_net.so" />
     </ItemGroup>
 

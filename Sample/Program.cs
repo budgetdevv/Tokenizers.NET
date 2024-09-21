@@ -10,6 +10,7 @@ namespace Sample
             
             public static uint ExpectedMaxBatches => 5;
             
+            
             public static string TokenizerJsonPath => "FlorenceTokenizer.json";
         }
 
