@@ -13,3 +13,5 @@ csbindgen = "1.9.3"
 
 [dependencies]
 tokenizers = "0.20.0"
+
+# Test build workflow
