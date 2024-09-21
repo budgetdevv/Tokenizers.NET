@@ -4,14 +4,14 @@
         <TargetFramework>net8.0</TargetFramework>
         <Nullable>enable</Nullable>
         <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-        
+
         <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
         <Title>Tokenizers.NET</Title>
         <Authors>TrumpMcDonaldz</Authors>
         <Description>High-performance .NET wrapper of the Rust Tokenizers library</Description>
         <PackageProjectUrl>https://github.com/budgetdevv/Tokenizers.NET</PackageProjectUrl>
         <RepositoryUrl>https://github.com/budgetdevv/Tokenizers.NET</RepositoryUrl>
-        <Version>1.0.2</Version>
+        <Version>1.0.3</Version>
     </PropertyGroup>
 
     <PropertyGroup>
@@ -21,87 +21,61 @@
     <ItemGroup>
         <None Include="../README.md" Pack="true" PackagePath="/"/>
     </ItemGroup>
-    
-<!--    <PropertyGroup>-->
-<!--        <RustProjectPath>$(MSBuildProjectDirectory)/../Native</RustProjectPath>-->
 
-<!--        &lt;!&ndash; Directory where Cargo will output the built libraries &ndash;&gt;-->
-<!--        <CargoTargetDirectory>$(RustProjectPath)/target</CargoTargetDirectory>-->
+    <Target Name="DownloadTokenizersDlls" BeforeTargets="PrepareForBuild">
+        <DownloadFile SourceUrl="https://github.com/budgetdevv/Tokenizers.NET/releases/latest/download/linux-arm64_libtokenizers_net.so" 
+            DestinationFolder="$(OutputPath)/runtimes/linux-arm64/native"
+            DestinationFileName="libtokenizers_net.so"/>
 
-<!--        <RustTargetOSXArm64>aarch64-apple-darwin</RustTargetOSXArm64>-->
-<!--        <RustTargetOSXX64>x86_64-apple-darwin</RustTargetOSXX64>-->
-<!--        -->
-<!--        <RustTargetWindowsX64>x86_64-pc-windows-msvc</RustTargetWindowsX64>-->
-<!--        -->
-<!--        <RustTargetLinuxX64>x86_64-unknown-linux-gnu</RustTargetLinuxX64>-->
-<!--        <RustTargetLinuxArm64>aarch64-unknown-linux-gnu</RustTargetLinuxArm64>-->
+        <DownloadFile SourceUrl="https://github.com/budgetdevv/Tokenizers.NET/releases/latest/download/linux-x64_libtokenizers_net.so" 
+            DestinationFolder="$(OutputPath)/runtimes/linux-x64/native"
+            DestinationFileName="libtokenizers_net.so" />
+        
+        <DownloadFile 
+                SourceUrl="https://github.com/budgetdevv/Tokenizers.NET/releases/latest/download/osx-arm64_libtokenizers_net.dylib" 
+                DestinationFolder="$(OutputPath)/runtimes/osx-arm64/native" 
+                DestinationFileName="libtokenizers_net.dylib" />
+        
+        <DownloadFile SourceUrl="https://github.com/budgetdevv/Tokenizers.NET/releases/latest/download/osx-x64_libtokenizers_net.dylib"
+            DestinationFolder="$(OutputPath)/runtimes/osx-x64/native"
+            DestinationFileName="libtokenizers_net.dylib" />
+        
+        <DownloadFile SourceUrl="https://github.com/budgetdevv/Tokenizers.NET/releases/latest/download/win-x64_tokenizers_net.dll"
+            DestinationFolder="$(OutputPath)/runtimes/win-x64/native"
+                DestinationFileName="tokenizers_net.dll" />
+        
+        <DownloadFile SourceUrl="https://github.com/budgetdevv/Tokenizers.NET/releases/latest/download/win-arm64_tokenizers_net.dll"
+            DestinationFolder="$(OutputPath)/runtimes/win-arm64/native"
+            DestinationFileName="tokenizers_net.dll" />
+    </Target>
 
-<!--        <NativeLibName_win>tokenizers_net.dll</NativeLibName_win>-->
-<!--        <NativeLibName_osx>libtokenizers_net.dylib</NativeLibName_osx>-->
-<!--        <NativeLibName_linux>libtokenizers_net.so</NativeLibName_linux>-->
-<!--    </PropertyGroup>-->
+    <!-- Include native libraries from the latest release -->
+    <ItemGroup>
+        <!-- Windows x64 -->
+        <None Include="$(OutputPath)/runtimes/win-x64/native/tokenizers_net.dll" 
+              PackagePath="runtimes/win-x64/native/tokenizers_net.dll" />
+        
+        <!-- Windows ARM64 -->
+        <None Include="$(OutputPath)/runtimes/win-arm64/native/tokenizers_net.dll" 
+              PackagePath="runtimes/win-arm64/native/tokenizers_net.dll" />
+        
+        <!-- macOS ARM64 -->
+        <None Include="$(OutputPath)/runtimes/osx-arm64/native/libtokenizers_net.dylib"
+              PackagePath="runtimes/osx-arm64/native/libtokenizers_net.dylib" />
 
-<!--    &lt;!&ndash; Pre-build step: Build the Rust project &ndash;&gt;-->
-<!--    <Target Name="BuildNative" BeforeTargets="Build" Condition="True">-->
-<!--        <Exec Command="cargo build &#45;&#45;release &#45;&#45;target $(RustTargetOSXArm64)"-->
-<!--              WorkingDirectory="$(RustProjectPath)"-->
-<!--              ContinueOnError="true"-->
-<!--        />-->
+        <!-- macOS x64 -->
+        <None Include="$(OutputPath)/runtimes/osx-x64/native/libtokenizers_net.dylib"
+              PackagePath="runtimes/osx-x64/native/libtokenizers_net.dylib" />
 
-<!--        <Exec Command="cargo build &#45;&#45;release &#45;&#45;target $(RustTargetOSXX64)"-->
-<!--              WorkingDirectory="$(RustProjectPath)"-->
-<!--              ContinueOnError="true"-->
-<!--        />-->
-<!--        -->
-<!--        <Exec Command="cross build &#45;&#45;release &#45;&#45;target $(RustTargetWindowsX64)"-->
-<!--              WorkingDirectory="$(RustProjectPath)"-->
-<!--              ContinueOnError="true"-->
-<!--        />-->
+        <!-- Linux x64 -->
+        <None Include="$(OutputPath)/runtimes/linux-x64/native/libtokenizers_net.so"
+              PackagePath="runtimes/linux-x64/native/libtokenizers_net.so" />
 
-<!--        <Exec Command="cross build &#45;&#45;release &#45;&#45;target $(RustTargetLinuxX64)"-->
-<!--              WorkingDirectory="$(RustProjectPath)"-->
-<!--              ContinueOnError="true"-->
-<!--        />-->
+        <!-- Linux ARM64 -->
+        <None Include="$(OutputPath)/runtimes/linux-arm64/native/libtokenizers_net.so"
+              PackagePath="runtimes/linux-arm64/native/libtokenizers_net.so" />
+    </ItemGroup>
 
-<!--        <Exec Command="cross build &#45;&#45;release &#45;&#45;target $(RustTargetLinuxArm64)"-->
-<!--              WorkingDirectory="$(RustProjectPath)"-->
-<!--              ContinueOnError="true"-->
-<!--        />-->
-<!--    </Target>-->
-
-<!--    &lt;!&ndash; Include native libraries in the NuGet package for different platforms &ndash;&gt;-->
-<!--    <ItemGroup>-->
-<!--        &lt;!&ndash; Windows x64 &ndash;&gt;-->
-<!--        <None Include="$(CargoTargetDirectory)/$(RustTargetWindowsX64)/release/tokenizers_net.dll"-->
-<!--              Pack="true"-->
-<!--              PackagePath="runtimes/win-x64/native/tokenizers_net.dll"-->
-<!--        />-->
-
-<!--        &lt;!&ndash; macOS ARM64 &ndash;&gt;-->
-<!--        <None Include="$(CargoTargetDirectory)/$(RustTargetOSXArm64)/release/libtokenizers_net.dylib"-->
-<!--              Pack="true"-->
-<!--              PackagePath="runtimes/osx-arm64/native/libtokenizers_net.dylib"-->
-<!--        />-->
-
-<!--        &lt;!&ndash; macOS x64 &ndash;&gt;-->
-<!--        <None Include="$(CargoTargetDirectory)/$(RustTargetOSXX64)/release/libtokenizers_net.dylib"-->
-<!--              Pack="true"-->
-<!--              PackagePath="runtimes/osx-x64/native/libtokenizers_net.dylib"-->
-<!--        />-->
-
-<!--        &lt;!&ndash; Linux x64 &ndash;&gt;-->
-<!--        <None Include="$(CargoTargetDirectory)/$(RustTargetLinuxX64)/release/libtokenizers_net.so"-->
-<!--              Pack="true"-->
-<!--              PackagePath="runtimes/linux-x64/native/libtokenizers_net.so"-->
-<!--        />-->
-
-<!--        &lt;!&ndash; Linux ARM64 &ndash;&gt;-->
-<!--        <None Include="$(CargoTargetDirectory)/$(RustTargetLinuxArm64)/release/libtokenizers_net.so"-->
-<!--              Pack="true"-->
-<!--              PackagePath="runtimes/linux-arm64/native/libtokenizers_net.so"-->
-<!--        />-->
-<!--    </ItemGroup>-->
-    
     <!--  https://youtrack.jetbrains.com/issue/RIDER-26906 -->
     <Target Name="ExcludeAnnoyingDylib" AfterTargets="ResolveAssemblyReferences">
         <ItemGroup>
@@ -110,5 +84,5 @@
             </None>
         </ItemGroup>
     </Target>
-    
+
 </Project>
