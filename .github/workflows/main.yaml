@@ -4,9 +4,6 @@ on:
     branches:
       - main
 
-permissions:
-  contents: write
-
 concurrency:
   group: ${{ github.ref }}
   cancel-in-progress: true
@@ -16,6 +13,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
+
       - name: Test
         working-directory: ./Native
         run: |
@@ -26,215 +24,137 @@ jobs:
     needs: [test]
     steps:
       - uses: actions/checkout@v3
+
       - name: Build
         working-directory: ./Native
         run: |
           rustup target add x86_64-unknown-linux-gnu
           cargo build --release --target x86_64-unknown-linux-gnu
-      - name: Debug - List contents
-        run: |
-          echo "Current directory:"
-          pwd
-          echo "Contents of current directory:"
-          ls -R
-          echo "Contents of Native/target directory:"
-          ls -R Native/target || echo "Target directory not found"
+
       - uses: actions/upload-artifact@v3
         with:
           name: ${{ github.job }}
-          path: Native/target/x86_64-unknown-linux-gnu/release/your_binary_name
+          path: ./Native/target/x86_64-unknown-linux-gnu/release/lib*.so
           retention-days: 1
-      - name: Verify artifact upload
-        run: |
-          echo "Artifact name: ${{ github.job }}"
-          echo "Artifact path: Native/target/x86_64-unknown-linux-gnu/release/your_binary_name"
-
+  
   linux-arm64:
     runs-on: ubuntu-latest
-    needs: [test]
+    needs: [ test ]
     steps:
       - uses: actions/checkout@v3
-      - name: Install ARM64 toolchain
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y gcc-aarch64-linux-gnu g++-aarch64-linux-gnu
+
       - name: Build
         working-directory: ./Native
-        run: |
-          rustup target add aarch64-unknown-linux-gnu
-          cargo build --release --target aarch64-unknown-linux-gnu
         env:
           CARGO_TARGET_AARCH64_UNKNOWN_LINUX_GNU_LINKER: aarch64-linux-gnu-gcc
-          CC_aarch64_unknown_linux_gnu: aarch64-linux-gnu-gcc
-          CXX_aarch64_unknown_linux_gnu: aarch64-linux-gnu-g++
-      - name: Debug - List contents
         run: |
-          echo "Current directory:"
-          pwd
-          echo "Contents of current directory:"
-          ls -R
-          echo "Contents of Native/target directory:"
-          ls -R Native/target || echo "Target directory not found"
+          sudo apt-get install -y gcc-aarch64-linux-gnu
+          rustup target add aarch64-unknown-linux-gnu
+          cargo build --release --target aarch64-unknown-linux-gnu
+
       - uses: actions/upload-artifact@v3
         with:
           name: ${{ github.job }}
-          path: Native/target/aarch64-unknown-linux-gnu/release/your_binary_name
+          path: ./Native/target/aarch64-unknown-linux-gnu/release/lib*.so
           retention-days: 1
-      - name: Verify artifact upload
-        run: |
-          echo "Artifact name: ${{ github.job }}"
-          echo "Artifact path: Native/target/aarch64-unknown-linux-gnu/release/your_binary_name"
 
   macos-amd64:
     runs-on: macos-13
     needs: [test]
     steps:
       - uses: actions/checkout@v3
+
       - name: Build
         working-directory: ./Native
         run: |
           rustup target add x86_64-apple-darwin
           cargo build --release --target x86_64-apple-darwin
-      - name: Debug - List contents
-        run: |
-          echo "Current directory:"
-          pwd
-          echo "Contents of current directory:"
-          ls -R
-          echo "Contents of Native/target directory:"
-          ls -R Native/target || echo "Target directory not found"
+
       - uses: actions/upload-artifact@v3
         with:
           name: ${{ github.job }}
-          path: Native/target/x86_64-apple-darwin/release/your_binary_name
+          path: ./Native/target/x86_64-apple-darwin/release/lib*.dylib
           retention-days: 1
-      - name: Verify artifact upload
-        run: |
-          echo "Artifact name: ${{ github.job }}"
-          echo "Artifact path: Native/target/x86_64-apple-darwin/release/your_binary_name"
-
+  
   macos-arm64:
     runs-on: macos-13
     needs: [test]
     steps:
       - uses: actions/checkout@v3
+
       - name: Build
         working-directory: ./Native
         run: |
           rustup target add aarch64-apple-darwin
           cargo build --release --target aarch64-apple-darwin
-      - name: Debug - List contents
-        run: |
-          echo "Current directory:"
-          pwd
-          echo "Contents of current directory:"
-          ls -R
-          echo "Contents of Native/target directory:"
-          ls -R Native/target || echo "Target directory not found"
+
       - uses: actions/upload-artifact@v3
         with:
           name: ${{ github.job }}
-          path: Native/target/aarch64-apple-darwin/release/your_binary_name
+          path: ./Native/target/aarch64-apple-darwin/release/lib*.dylib
           retention-days: 1
-      - name: Verify artifact upload
-        run: |
-          echo "Artifact name: ${{ github.job }}"
-          echo "Artifact path: Native/target/aarch64-apple-darwin/release/your_binary_name"
 
   windows-amd64:
     runs-on: windows-latest
-    needs: [test]
+    needs: [ test ]
     steps:
       - uses: actions/checkout@v3
+
       - name: Build
         working-directory: ./Native
         run: |
           rustup target add x86_64-pc-windows-msvc
           cargo build --release --target x86_64-pc-windows-msvc
-      - name: Debug - List contents
-        run: |
-          echo "Current directory:"
-          pwd
-          echo "Contents of current directory:"
-          ls -R
-          echo "Contents of Native/target directory:"
-          ls -R Native/target || echo "Target directory not found"
+
       - uses: actions/upload-artifact@v3
         with:
           name: ${{ github.job }}
-          path: Native/target/x86_64-pc-windows-msvc/release/your_binary_name.exe
+          path: ./Native/target/x86_64-pc-windows-msvc/release/*.dll
           retention-days: 1
-      - name: Verify artifact upload
-        run: |
-          echo "Artifact name: ${{ github.job }}"
-          echo "Artifact path: Native/target/x86_64-pc-windows-msvc/release/your_binary_name.exe"
 
   windows-arm64:
     runs-on: windows-latest
-    needs: [test]
+    needs: [ test ]
     steps:
       - uses: actions/checkout@v3
+
       - name: Build
         working-directory: ./Native
         run: |
           rustup target add aarch64-pc-windows-msvc
           cargo build --release --target aarch64-pc-windows-msvc
-      - name: Debug - List contents
-        run: |
-          echo "Current directory:"
-          pwd
-          echo "Contents of current directory:"
-          ls -R
-          echo "Contents of Native/target directory:"
-          ls -R Native/target || echo "Target directory not found"
+
       - uses: actions/upload-artifact@v3
         with:
           name: ${{ github.job }}
-          path: Native/target/aarch64-pc-windows-msvc/release/your_binary_name.exe
+          path: ./Native/target/aarch64-pc-windows-msvc/release/*.dll
           retention-days: 1
-      - name: Verify artifact upload
-        run: |
-          echo "Artifact name: ${{ github.job }}"
-          echo "Artifact path: Native/target/aarch64-pc-windows-msvc/release/your_binary_name.exe"
 
   publish-github-release:
     runs-on: ubuntu-latest
-    needs: [linux-amd64, linux-arm64, macos-amd64, macos-arm64, windows-amd64, windows-arm64]
+    needs: [ linux-amd64, linux-arm64, macos-amd64, macos-arm64, windows-amd64, windows-arm64 ]
     steps:
       - uses: actions/checkout@v3
-      - name: Download artifacts
-        uses: actions/download-artifact@v3
+      - uses: actions/download-artifact@v3
         with:
-          path: artifacts
-      - name: Debug - List contents
-        run: |
-          echo "Current directory:"
-          pwd
-          echo "Contents of current directory:"
-          ls -R
-          echo "Contents of artifacts directory (if it exists):"
-          ls -R artifacts || echo "artifacts directory not found"
+          path: target
       - name: Create Github Release
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           TAG="$(date -u +"v%Y.%m.%d.%H%M").${GITHUB_SHA::4}"
           echo "Tag: ${TAG}"
           gh release create $TAG --draft --notes "Automatically built binaries"
-          
-          if [ -d "artifacts" ]; then
-            cd artifacts
-            for DIR_NAME in * ; do
-              if [ -d "$DIR_NAME" ]; then
-                cd $DIR_NAME
-                chmod -R +x .
-                tar -czvf $DIR_NAME.tar.gz *
-                gh release upload $TAG $DIR_NAME.tar.gz
-                cd ..
-              fi
-            done
-          else
-            echo "No artifacts found. Creating an empty release."
-          fi
-          
+          cd target
+          for DIR_NAME in * ; do
+              cd $DIR_NAME
+              for FILE in * ; do
+                  NEW_FILE_NAME="${DIR_NAME}_${FILE}"
+                  echo "Renaming $FILE to $NEW_FILE_NAME"
+                  mv $FILE $NEW_FILE_NAME
+                  echo "Uploading $NEW_FILE_NAME"
+                  gh release upload $TAG $NEW_FILE_NAME
+              done
+              cd ..
+          done
           gh release edit $TAG --draft=false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
