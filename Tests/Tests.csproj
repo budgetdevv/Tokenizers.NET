@@ -37,6 +37,13 @@
         <!-- macOS ARM64 -->
         <Content Include="$(CargoTargetDirectory)/release/libtokenizers_net.dylib"
                  CopyToOutputDirectory="PreserveNewest"
+                 Condition="Exists('$(CargoTargetDirectory)/release/libtokenizers_net.dylib')"
+        />
+
+        <!-- macOS ARM64, for GH workflow -->
+        <Content Include="$(MSBuildProjectDirectory)/../Tokenizers.NET/bin/Release/$(TargetFramework)/runtimes/osx-arm64/native/libtokenizers_net.dylib"
+                 CopyToOutputDirectory="PreserveNewest"
+                 Condition="!Exists('$(CargoTargetDirectory)/release/libtokenizers_net.dylib')"
         />
     </ItemGroup>
 
