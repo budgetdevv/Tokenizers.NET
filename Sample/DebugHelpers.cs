@@ -4,6 +4,11 @@ namespace Sample
 {
     public static class DebugHelpers
     {
+        public static string GetSpanPrintString<T>(this Span<T> span)
+        {
+            return GetSpanPrintString((ReadOnlySpan<T>) span);
+        }
+        
         public static string GetSpanPrintString<T>(this ReadOnlySpan<T> span)
         {
             return span.ToArray().GetArrPrintString();

@@ -29,14 +29,14 @@ namespace Sample
         {
             var tokenizer = new Tokenizer<Config>();
 
-            Console.WriteLine($"Truncates: {tokenizer.Truncate}");
+            Console.WriteLine($"Truncates: {tokenizer.Truncate}\n");
             
             ReadOnlySpan<string> inputTexts = 
             [
-                "Sunset",
-                "I'm fine, thank you!",
-                "I love C#!",
-                GenerateString('H', 4096),
+                // "Sunset",
+                // "I'm fine, thank you!",
+                // "I love C#!",
+                GenerateString('H', 2000),
             ];
 
             var outputs = tokenizer.Tokenize(inputTexts);
@@ -47,28 +47,54 @@ namespace Sample
             
             foreach (var token in outputSpan)
             {
-                foreach (var overflow in token.OverflowingTokens.AsReadOnlySpan())
+                const bool TEST_OVERFLOW = false;
+                
+                if (TEST_OVERFLOW)
                 {
-                    // Console.WriteLine($"Overflow: {overflow.IDs.AsReadOnlySpan().GetSpanPrintString()}\n\n");
-                    Console.WriteLine($"Overflow Length: {overflow.IDs.Length}");
+                    var overflowIndex = 0;
+                    
+                    foreach (var overflow in token.OverflowingTokens.AsReadOnlySpan())
+                    {
+                        Console.WriteLine(
+                        $"""
+                        Overflow {overflowIndex}: {overflow.IDs.AsReadOnlySpan().GetSpanPrintString()}
+                        
+                        Overflow {overflowIndex} length: {overflow.IDs.Length}
+                        
+                        """);
+                        
+                        overflowIndex++;
+                    }
                 }
+
+                var tokenIDs = token.IDs;
                 
                 Console.WriteLine(
                 $"""
                 Text: {inputTexts[index++]}
-                Input IDs: {token.IDs.AsReadOnlySpan().GetSpanPrintString()}
+                
+                Input IDs: {tokenIDs.AsReadOnlySpan().GetSpanPrintString()}
+                
+                Input IDs Widen: {tokenIDs.Widen().Memory.AsSpan().GetSpanPrintString()}
+                
                 Attention Mask: {token.AttentionMask.AsReadOnlySpan().GetSpanPrintString()}
+                
+                Input IDs Length: {token.IDs.Length}
+                
                 """);
 
-                Console.WriteLine($"Input IDs Length: {token.IDs.Length}");
-
-                var decodedTextResult = tokenizer.Decode(token.IDs, true);
+                const bool TEST_DECODE = false;
                 
-                var decodedText = decodedTextResult.ToString();
-
-                Console.WriteLine(decodedText);
+                if (TEST_DECODE)
+                {
+                    var decodedTextResult = tokenizer.Decode(token.IDs, true);
                 
-                decodedTextResult.Dispose();
+                    var decodedText = decodedTextResult.ToString();
+
+                    Console.WriteLine(decodedText);
+                
+                    decodedTextResult.Dispose();
+                }
                 
                 token.Dispose();
             }
@@ -82,7 +108,7 @@ namespace Sample
                 using var output = tokenizer.Tokenize("Hi");
             
                 // Console.WriteLine(output.IDs.AsReadOnlySpan().GetSpanPrintString());
-                Console.WriteLine($"Overflowing Tokens Length: {output.OverflowingTokens.Length}");
+                Console.WriteLine($"Overflowing Tokens Length: {output.OverflowingTokens.Length}\n");
             }
             
             Console.WriteLine("Done!");
