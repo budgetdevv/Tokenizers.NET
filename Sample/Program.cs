@@ -51,7 +51,6 @@ namespace Sample
                 foreach (var overflow in token.OverflowingTokens.AsReadOnlySpan())
                 {
                     // Console.WriteLine($"Overflow: {overflow.IDs.AsReadOnlySpan().GetSpanPrintString()}\n\n");
-
                     Console.WriteLine($"Overflow Length: {overflow.IDs.Length}");
                 }
                 
@@ -66,7 +65,7 @@ namespace Sample
 
                 var decodedTextResult = tokenizer.Decode(token.IDs, true);
                 
-                var decodedText = Encoding.UTF8.GetString(decodedTextResult.TextBuffer.AsReadOnlySpan());
+                var decodedText = decodedTextResult.ToString();
 
                 Console.WriteLine(decodedText);
                 
