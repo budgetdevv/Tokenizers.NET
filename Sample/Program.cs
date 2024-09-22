@@ -79,12 +79,15 @@ namespace Sample
             
             outputs.Dispose();
 
-            var output = tokenizer.Tokenize("Hi");
+            const bool TEST_SINGLE_TOKENIZE = false;
             
-            // Console.WriteLine(output.IDs.AsReadOnlySpan().GetSpanPrintString());
-            Console.WriteLine($"Overflowing Tokens Length: {output.OverflowingTokens.Length}");
+            if (TEST_SINGLE_TOKENIZE)
+            {
+                using var output = tokenizer.Tokenize("Hi");
             
-            output.Dispose();
+                // Console.WriteLine(output.IDs.AsReadOnlySpan().GetSpanPrintString());
+                Console.WriteLine($"Overflowing Tokens Length: {output.OverflowingTokens.Length}");
+            }
             
             Console.WriteLine("Done!");
             
