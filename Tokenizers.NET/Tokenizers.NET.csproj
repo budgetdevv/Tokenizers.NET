@@ -11,7 +11,7 @@
         <Description>High-performance .NET wrapper of the Rust Tokenizers library</Description>
         <PackageProjectUrl>https://github.com/budgetdevv/Tokenizers.NET</PackageProjectUrl>
         <RepositoryUrl>https://github.com/budgetdevv/Tokenizers.NET</RepositoryUrl>
-        <Version>1.0.4</Version>
+        <Version>1.0.5</Version>
     </PropertyGroup>
 
     <PropertyGroup>
