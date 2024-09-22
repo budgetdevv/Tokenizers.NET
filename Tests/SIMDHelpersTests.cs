@@ -1,9 +1,11 @@
+using Allure.NUnit;
 using FluentAssertions;
 using Tokenizers.NET;
 using Tokenizers.NET.Collections;
 
 namespace Tests
 {
+    [AllureNUnit]
     public sealed class SIMDHelpersTests
     {
         private struct Config: ITokenizerConfig

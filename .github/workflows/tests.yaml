@@ -1,6 +1,7 @@
 # https://medium.com/@m.b1lal/how-to-use-github-actions-to-run-nunit-tests-and-publish-allure-reports-to-github-pages-224866d3ea2e
 
 name: NUnit Tests and Deploy Allure Reports
+
 on:
   push:
     branches:
@@ -19,30 +20,31 @@ jobs:
       - name: Install .NET Core
         uses: actions/setup-dotnet@v3
         with:
-          dotnet-version: 9.0.x
+          dotnet-version: 8.0.x
 
       - name: Restore dependencies
         run: dotnet restore
 
       - name: Test
-        run: dotnet test
+        run: dotnet test --framework net8.0 --no-restore
 
       - name: Upload Allure Results
         uses: actions/upload-artifact@v4.0.0
         with:
           name: allure-results
-          path: .\bin\Debug\net6.0\allure-results
+          path: Tests/bin/Debug/net8.0/allure-results
           if-no-files-found: error
           retention-days: 20
-
-      - name: Clean up gh-pages branch (optional)
-        run: |
-          git checkout -f gh-pages
-          git rm -rf .
+#
+#      - name: Clean up gh-pages branch (optional)
+#        run: |
+#          git checkout -f gh-pages
+#          rm -rf allure-report
 
   report:
     needs: test
     
+    # "Container action is only supported on Linux"
     runs-on: ubuntu-latest
     
     steps:
@@ -64,6 +66,7 @@ jobs:
         uses: simple-elf/allure-report-action@v1.7
         if: always()
         id: allure-report
+        continue-on-error: true
         with:
           allure_results: allure-results
           gh_pages: allure-report
