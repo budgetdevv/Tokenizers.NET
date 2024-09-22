@@ -37,26 +37,29 @@ namespace Tokenizers.NET
         {
             var originalOutputFreeHandle = OriginalOutputFreeHandle;
             var overflowingTokensHandle = OverflowingTokensFreeHandle;
-            
-            if (overflowingTokensHandle == nint.Zero)
-            {
-                TokenizerNativeMethods.FreeWithHandle(originalOutputFreeHandle);
-            }
 
-            else
+            var freeOverflowingTokens = overflowingTokensHandle != nint.Zero;
+            
+            #if DEBUG
+            TokenizerNativeMethods.FreeWithHandle(originalOutputFreeHandle);
+            
+            if (freeOverflowingTokens)
             {
-                #if DEBUG
-                TokenizerNativeMethods.FreeWithHandle(originalOutputFreeHandle);
                 TokenizerNativeMethods.FreeWithHandle(overflowingTokensHandle);
-                #else
-                var ptr = stackalloc nint[2];
-                
-                *ptr = originalOutputFreeHandle;
-                *(ptr + 1) = overflowingTokensHandle;
-                
-                TokenizerNativeMethods.FreeWithMultipleHandles(new(ptr, 2));
-                #endif
             }
+            
+            #else
+            // It is fine to over-allocate
+            var ptr = stackalloc nint[2];
+            
+            *ptr = originalOutputFreeHandle;
+            *(ptr + 1) = overflowingTokensHandle;
+                
+            TokenizerNativeMethods.FreeWithMultipleHandles(new(
+                ptr, 
+                length: freeOverflowingTokens ? (nuint) 2 : 1)
+            );
+            #endif
         }
     }
 }
