@@ -34,7 +34,7 @@ namespace Tokenizers.NET.Collections
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public Span<T> AsSpan()
         {
-            return new(Ptr, (int) Length);
+            return MemoryMarshal.CreateSpan(ref *Ptr, (int) Length);
         }
         
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -75,7 +75,7 @@ namespace Tokenizers.NET.Collections
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public ReadOnlySpan<T> AsReadOnlySpan()
         {
-            return new(Ptr, (int) Length);
+            return MemoryMarshal.CreateReadOnlySpan(ref *Ptr, (int) Length);
         }
         
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
