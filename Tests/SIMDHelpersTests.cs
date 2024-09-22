@@ -56,5 +56,11 @@ namespace Tests
                 srcMemory.ToArray().Should().BeEquivalentTo(destMemory.ToArray());
             }
         }
+        
+        [Test]
+        public void FooTest()
+        {
+            
+        }
     }
 }
