@@ -13,6 +13,10 @@
     <ItemGroup>
         <Content Include="FlorenceTokenizer.json" CopyToOutputDirectory="PreserveNewest" />
     </ItemGroup>
+
+    <ItemGroup>
+        <Content Include="OverflowingTokenizer.json" CopyToOutputDirectory="PreserveNewest" />
+    </ItemGroup>
     
     <ItemGroup>
         <PackageReference Include="Tokenizers.NET" Version="1.0.4" />

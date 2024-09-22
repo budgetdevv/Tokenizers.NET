@@ -11,8 +11,7 @@ namespace Sample
             
             public static uint ExpectedMaxBatches => 5;
             
-            
-            public static string TokenizerJsonPath => "FlorenceTokenizer.json";
+            public static string TokenizerJsonPath => "OverflowingTokenizer.json";
         }
 
         private static string GenerateString(char val, int length)
@@ -37,7 +36,7 @@ namespace Sample
                 "Sunset",
                 "I'm fine, thank you!",
                 "I love C#!",
-                // GenerateString('H', 4096),
+                GenerateString('H', 4096),
             ];
 
             var outputs = tokenizer.Tokenize(inputTexts);
