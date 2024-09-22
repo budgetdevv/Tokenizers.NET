@@ -11,7 +11,7 @@ namespace Sample
             
             public static uint ExpectedMaxBatches => 5;
             
-            public static string TokenizerJsonPath => "OverflowingTokenizer.json";
+            public static string TokenizerJsonPath => "FlorenceTokenizer.json";
         }
 
         private static string GenerateString(char val, int length)

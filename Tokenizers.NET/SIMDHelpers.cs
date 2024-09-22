@@ -33,11 +33,13 @@ namespace Tokenizers.NET
             NativeBuffer<ulong> destBuffer,
             bool performLengthCheck)
         {
-            var currentSourcePtr = srcBuffer.Ptr;
+            var currentSrcPtr = srcBuffer.Ptr;
             var currentDestPtr = destBuffer.Ptr;
             
             var srcLength = srcBuffer.Length;
             var destLength = destBuffer.Length;
+            
+            var lastSrcOffsetByOne = currentSrcPtr + srcLength;
 
             if (performLengthCheck)
             {
@@ -56,12 +58,12 @@ namespace Tokenizers.NET
             
             var srcLengthTruncated = srcLength & ~((nuint) Vector<uint>.Count - 1);
             
-            for (uint* lastSourceOffsetByOne = currentSourcePtr + srcLengthTruncated;
-                 currentSourcePtr < lastSourceOffsetByOne;
-                 currentSourcePtr += Vector<uint>.Count, 
+            for (uint* lastSrcInTruncatedOffsetByOne = currentSrcPtr + srcLengthTruncated;
+                 currentSrcPtr < lastSrcInTruncatedOffsetByOne;
+                 currentSrcPtr += Vector<uint>.Count, 
                  currentDestPtr += Vector<uint>.Count)
             {
-                var srcVec = Vector.Load(currentSourcePtr);
+                var srcVec = Vector.Load(currentSrcPtr);
                 
                 Vector.Widen(srcVec, out var low, out var high);
                 
@@ -73,20 +75,16 @@ namespace Tokenizers.NET
             {
                 // Handle remaining
                 
-                // Get ptr to start of last vec
-                var lastSrcOffsetByOne = currentSourcePtr + srcLength;
-                
                 // Assume Vector<uint>.Count is 3
                 // [ 0, 1, 2 ] 3 -> 3 - 3 = 0, which gives us the start of the last vec
                 
                 var lastSrcVecStart = lastSrcOffsetByOne - Vector<uint>.Count;
                 
                 #if DEBUG
-                Debug.Assert((currentSourcePtr - lastSrcVecStart) < 0);
+                Debug.Assert((currentSrcPtr - lastSrcVecStart) > 0);
                 #endif
                 
-                var lastDestVecStart = currentDestPtr + (currentSourcePtr - lastSrcVecStart);
-                
+                var lastDestVecStart = currentDestPtr - (currentSrcPtr - lastSrcVecStart);
                 
                 // Load the last source vec
                 var lastSrcVec = Vector.Load(lastSrcVecStart);
@@ -100,9 +98,9 @@ namespace Tokenizers.NET
             return;
             
             Short:
-            for (uint i = 0; i < srcLength; i++)
+            for (; currentSrcPtr < lastSrcOffsetByOne; currentSrcPtr++, currentDestPtr++)
             {
-                currentDestPtr[i] = currentSourcePtr[i];
+                *currentDestPtr = *currentSrcPtr;
             }
         }
     }
