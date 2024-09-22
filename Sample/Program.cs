@@ -17,9 +17,7 @@ namespace Sample
 
         private static string GenerateString(char val, int length)
         {
-            return string.Create(length, 
-                length, 
-                (buffer, len) =>
+            return string.Create(length, length, (buffer, len) =>
             {
                 for (var i = 0; i < len; i++)
                 {
