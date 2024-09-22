@@ -5,7 +5,7 @@ High-performance .NET wrapper for https://github.com/huggingface/tokenizers
 # How to install
 
 ```
-dotnet add package Tokenizers.NET --version 1.0.3
+dotnet add package Tokenizers.NET --version 1.0.4
 ```
 
 # Why Tokenizers.NET?

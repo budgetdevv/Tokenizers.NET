@@ -14,17 +14,17 @@
         <Content Include="FlorenceTokenizer.json" CopyToOutputDirectory="PreserveNewest" />
     </ItemGroup>
     
-<!--    <ItemGroup>-->
-<!--        <PackageReference Include="Tokenizers.NET" Version="1.0.3" />-->
-<!--    </ItemGroup>-->
+    <ItemGroup>
+        <PackageReference Include="Tokenizers.NET" Version="1.0.4" />
+    </ItemGroup>
     
     <!--    This is only used in development. Since I am the only developer, it will be hardcoded to a dylib file.-->
-    <ItemGroup>
-        <ProjectReference Include="..\Tokenizers.NET\Tokenizers.NET.csproj" />
-        
-        <!-- macOS ARM64 -->
-        <Content Include="$(CargoTargetDirectory)/release/libtokenizers_net.dylib"
-                 CopyToOutputDirectory="PreserveNewest" 
-        />
-    </ItemGroup>
+<!--    <ItemGroup>-->
+<!--        <ProjectReference Include="..\Tokenizers.NET\Tokenizers.NET.csproj" />-->
+<!--        -->
+<!--        &lt;!&ndash; macOS ARM64 &ndash;&gt;-->
+<!--        <Content Include="$(CargoTargetDirectory)/release/libtokenizers_net.dylib"-->
+<!--                 CopyToOutputDirectory="PreserveNewest" -->
+<!--        />-->
+<!--    </ItemGroup>-->
 </Project>
