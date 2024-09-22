@@ -153,6 +153,8 @@ impl TokenizeOutput
     #[inline(always)]
     pub unsafe fn from_encoded_tokens(encoded_tokens: Encoding, truncate: bool) -> Self
     {
+        // println!("Offsets {:?}", encoded_tokens.get_offsets());
+
         let ids = ReadOnlyBuffer::from_slice(encoded_tokens.get_ids());
         let attention_mask = ReadOnlyBuffer::from_slice(encoded_tokens.get_attention_mask());
         let special_tokens_mask = ReadOnlyBuffer::from_slice(encoded_tokens.get_special_tokens_mask());
@@ -275,7 +277,7 @@ pub unsafe extern "C" fn tokenizer_encode_core(
 
     let text = std::str::from_utf8_unchecked(text_buffer.as_slice());
 
-    let encoded_result = tokenizer.encode(text, true);
+    let encoded_result = tokenizer.encode_fast(text, true);
 
     let encoded_tokens = match encoded_result
     {
@@ -319,7 +321,7 @@ pub unsafe extern "C" fn tokenizer_encode_batch_core(
         .map(|text_buffer| std::str::from_utf8_unchecked(text_buffer.as_slice()))
         .collect::<Vec<&str>>();
 
-    let encoded_result = tokenizer.encode_batch(texts, true);
+    let encoded_result = tokenizer.encode_batch_fast(texts, true);
 
     let encoded_tokens = match encoded_result
     {
