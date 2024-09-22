@@ -47,7 +47,7 @@ namespace Tokenizers.NET.Collections
     [StructLayout(LayoutKind.Sequential)]
     public readonly unsafe struct ReadOnlyNativeBuffer<T>(T* ptr, nuint length) where T: unmanaged
     {
-        private readonly T* Ptr = ptr;
+        internal readonly T* Ptr = ptr;
         public readonly nuint Length = length;
             
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
