@@ -35,11 +35,6 @@ jobs:
           path: Tests/bin/Debug/net8.0/allure-results
           if-no-files-found: error
           retention-days: 20
-#
-#      - name: Clean up gh-pages branch (optional)
-#        run: |
-#          git checkout -f gh-pages
-#          rm -rf allure-report
 
   report:
     needs: test
@@ -53,14 +48,6 @@ jobs:
         with:
           name: allure-results
           path: ./allure-results
-
-      - name: Get Allure history (optional)
-        uses: actions/checkout@v4.1.1
-        if: always()
-        continue-on-error: true
-        with:
-          ref: gh-pages
-          path: gh-pages
 
       - name: Generate report
         uses: simple-elf/allure-report-action@v1.7
