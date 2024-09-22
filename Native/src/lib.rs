@@ -1,5 +1,4 @@
-use std::alloc::{ dealloc, Layout };
-use std::mem::ManuallyDrop;
+use std::marker::PhantomData;
 use std::ptr::null;
 use tokenizers::tokenizer::Tokenizer;
 use tokenizers::Encoding;
@@ -7,8 +6,8 @@ use tokenizers::Encoding;
 #[repr(C)]
 pub struct Buffer<T>
 {
-    ptr: *mut T,
-    length: usize,
+    pub ptr: *mut T,
+    pub length: usize,
 }
 
 impl<T> Buffer<T>
@@ -50,7 +49,7 @@ impl<T> Buffer<T>
 pub struct ReadOnlyBuffer<T>
 {
     ptr: *const T,
-    length: usize,
+    pub length: usize,
 }
 
 impl<T> ReadOnlyBuffer<T>
@@ -100,36 +99,41 @@ impl<T> ReadOnlyBuffer<T>
     }
 }
 
-pub struct FreeData
+pub struct DropHandle<T=()>
+
 {
-    pub ptr: *mut u8,
-    pub layout: Layout,
+    pub ptr_to_box: *mut (),
+    pub drop_callback: fn(*mut ()),
+    stop_complaining_you_bitch: PhantomData<T>,
 }
 
-impl FreeData
+impl <T> DropHandle<T>
 {
-    pub unsafe fn from_pointer<T>(ptr: &mut T) -> Self
+    pub unsafe fn from_value_and_allocate_box(value: T) -> *mut DropHandle<T>
     {
-        let layout = Layout::for_value(&*ptr);
+        let val_box = Box::new(value);
 
-        return FreeData
+        let drop_callback = |ptr: *mut()|
         {
-            ptr: (ptr as *mut T) as *mut u8,
-            layout,
-        }
-    }
+            let actual_ptr = ptr as *mut T;
+            let _ = Box::from_raw(actual_ptr);
+        };
 
-    pub unsafe fn from_pointer_and_box<T>(ptr: &mut T) -> *mut Self
-    {
-        let layout = Layout::for_value(ptr);
-
-        let result = Box::new(FreeData
+        let handle = Box::new(DropHandle
         {
-            ptr: (ptr as *mut T) as *mut u8,
-            layout,
+            // into_raw() keeps the box alive
+            ptr_to_box: Box::into_raw(val_box) as *mut (),
+            drop_callback,
+            stop_complaining_you_bitch: Default::default(),
         });
 
-        return Box::into_raw(result);
+        // into_raw() keeps the box alive
+        return Box::into_raw(handle);
+    }
+
+    pub unsafe fn from_handle(handle: *mut DropHandle<T>) -> Box<DropHandle<T>>
+    {
+        return Box::from_raw(handle);
     }
 }
 
@@ -140,8 +144,8 @@ pub struct TokenizeOutput
     pub attention_mask: ReadOnlyBuffer<u32>,
     pub special_tokens_mask: ReadOnlyBuffer<u32>,
     pub overflowing_tokens: ReadOnlyBuffer<TokenizeOutputOverflowedToken>,
-    pub original_output_free_handle: *const FreeData,
-    pub overflowing_tokens_free_handle: *const FreeData,
+    pub original_output_free_handle: *const DropHandle<Encoding>,
+    pub overflowing_tokens_free_handle: *const DropHandle<Vec<TokenizeOutputOverflowedToken>>,
 }
 
 impl TokenizeOutput
@@ -149,8 +153,6 @@ impl TokenizeOutput
     #[inline(always)]
     pub unsafe fn from_encoded_tokens(encoded_tokens: Encoding, truncate: bool) -> Self
     {
-        let encoded_tokens = Box::new(encoded_tokens);
-
         let ids = ReadOnlyBuffer::from_slice(encoded_tokens.get_ids());
         let attention_mask = ReadOnlyBuffer::from_slice(encoded_tokens.get_attention_mask());
         let special_tokens_mask = ReadOnlyBuffer::from_slice(encoded_tokens.get_special_tokens_mask());
@@ -159,9 +161,9 @@ impl TokenizeOutput
 
         let overflowing_tokens: ReadOnlyBuffer<TokenizeOutputOverflowedToken>;
 
-        let overflowing_tokens_free_handle: *const FreeData;
+        let overflowing_tokens_free_handle: *const DropHandle<Vec<TokenizeOutputOverflowedToken>>;
 
-        if (truncate && overflowing_tokens_slice.len() > 0)
+        if truncate && overflowing_tokens_slice.len() > 0
         {
             let mut overflowing_tokens_vec = overflowing_tokens_slice
                 .iter()
@@ -171,11 +173,11 @@ impl TokenizeOutput
 
             // println!("Overflowing tokens: {:?}", overflowing_tokens.as_slice().len());
 
-            overflowing_tokens_free_handle = FreeData::from_pointer_and_box(
-                &mut *(overflowing_tokens_vec.as_mut_ptr())
-            );
+            overflowing_tokens = ReadOnlyBuffer::from_vec(&mut overflowing_tokens_vec);
 
-            overflowing_tokens = ReadOnlyBuffer::from_vec(&mut ManuallyDrop::new(overflowing_tokens_vec));
+            overflowing_tokens_free_handle = DropHandle::from_value_and_allocate_box(
+                overflowing_tokens_vec
+            );
         }
 
         else
@@ -184,12 +186,8 @@ impl TokenizeOutput
             overflowing_tokens_free_handle = null();
         }
 
-        // into_raw() keeps encoded_tokens alive
-        let encoded_tokens_ptr = Box::into_raw(encoded_tokens);
-
-        let original_output_free_handle = FreeData::from_pointer_and_box(
-            &mut *encoded_tokens_ptr
-        );
+        let original_output_free_handle =
+            DropHandle::from_value_and_allocate_box(encoded_tokens);
 
         return TokenizeOutput
         {
@@ -233,7 +231,7 @@ impl TokenizeOutputOverflowedToken
 pub unsafe extern "C" fn allocate_tokenizer(
     json_bytes_ptr: *const u8,
     json_bytes_length: usize,
-) -> *const Tokenizer
+) -> *mut Tokenizer
 {
     let json_bytes = std::slice::from_raw_parts(json_bytes_ptr, json_bytes_length);
 
@@ -341,27 +339,82 @@ pub unsafe extern "C" fn tokenizer_encode_batch_core(
     }
 }
 
-#[no_mangle]
-pub unsafe extern "C" fn free_with_handle(handle: *mut FreeData)
+#[repr(C)]
+pub struct DecodeOutput
 {
-    let free_data = Box::from_raw(handle);
+    pub text_buffer: ReadOnlyBuffer<u8>,
+    pub free_handle: *mut DropHandle<String>
+}
 
-    // println!("Freeing memory at {:p}", free_data.ptr);
-    // println!("With layout {:?}", free_data.layout);
+impl DecodeOutput
+{
+    #[inline(always)]
+    pub unsafe fn from_text(mut text: String) -> Self
+    {
+        let text_bytes = text.as_mut_vec();
 
-    dealloc(free_data.ptr, free_data.layout);
+        let text_buffer = ReadOnlyBuffer::from_vec(text_bytes);
+
+        let free_handle = DropHandle::from_value_and_allocate_box(text);
+
+        return DecodeOutput
+        {
+            text_buffer,
+            free_handle,
+        };
+    }
 }
 
 #[no_mangle]
-pub unsafe extern "C" fn free_with_multiple_handles(handle: ReadOnlyBuffer<*mut FreeData>)
+pub unsafe extern "C" fn tokenizer_decode(
+    tokenizer_ptr: *mut Tokenizer,
+    id_buffer: ReadOnlyBuffer<u32>)
+    -> DecodeOutput
+{
+    return tokenizer_decode_core(tokenizer_ptr, id_buffer, false);
+}
+
+#[no_mangle]
+pub unsafe extern "C" fn tokenizer_decode_skip_special_tokens(
+    tokenizer_ptr: *mut Tokenizer,
+    id_buffer: ReadOnlyBuffer<u32>)
+    -> DecodeOutput
+{
+    return tokenizer_decode_core(tokenizer_ptr, id_buffer, true);
+}
+
+#[inline(always)]
+pub unsafe extern "C" fn tokenizer_decode_core(
+    tokenizer_ptr: *mut Tokenizer,
+    id_buffer: ReadOnlyBuffer<u32>,
+    skip_special_tokens: bool)
+    -> DecodeOutput
+{
+    let tokenizer = &*tokenizer_ptr;
+
+    let text = tokenizer.decode(id_buffer.as_slice(), skip_special_tokens).unwrap();
+
+    return DecodeOutput::from_text(text);
+}
+
+#[no_mangle]
+#[inline(always)]
+pub unsafe extern "C" fn free_with_handle(handle: *mut DropHandle<()>)
+{
+    let free_data = DropHandle::from_handle(handle);
+
+//     println!("Freeing memory at {:p}", free_data.ptr_to_box);
+
+    let drop_callback = free_data.drop_callback;
+
+    drop_callback(free_data.ptr_to_box);
+}
+
+#[no_mangle]
+pub unsafe extern "C" fn free_with_multiple_handles(handle: ReadOnlyBuffer<*mut DropHandle<()>>)
 {
     for free_data in handle.as_slice()
     {
-        let free_data = Box::from_raw(*free_data);
-
-        // println!("Freeing memory at {:p}", free_data.ptr);
-        // println!("With layout {:?}", free_data.layout);
-
-        dealloc(free_data.ptr, free_data.layout);
+        free_with_handle(*free_data);
     }
 }

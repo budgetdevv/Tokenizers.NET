@@ -68,6 +68,29 @@ namespace Tokenizers.NET
             ReadOnlyNativeBuffer<ReadOnlyNativeBuffer<byte>> textNativeBuffers, 
             NativeBuffer<TokenizeOutput> outputNativeBuffer
         );
+        
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static DecodeOutput TokenizerDecode(
+            nint tokenizerPtr,
+            ReadOnlyNativeBuffer<uint> ids,
+            bool skipSpecialTokens)
+        {
+            if (skipSpecialTokens)
+            {
+                return TokenizerDecodeSkipSpecialTokens(tokenizerPtr, ids);
+            }
+
+            else
+            {
+                return TokenizerDecode(tokenizerPtr, ids);
+            }
+        }
+        
+        [DllImport(DLL_NAME, EntryPoint = "tokenizer_decode", CallingConvention = CallingConvention.Cdecl, ExactSpelling = true)]
+        private static extern DecodeOutput TokenizerDecode(nint tokenizerPtr, ReadOnlyNativeBuffer<uint> idBuffer);
+
+        [DllImport(DLL_NAME, EntryPoint = "tokenizer_decode_skip_special_tokens", CallingConvention = CallingConvention.Cdecl, ExactSpelling = true)]
+        private static extern DecodeOutput TokenizerDecodeSkipSpecialTokens(nint tokenizerPtr, ReadOnlyNativeBuffer<uint> idBuffer);
 
         [DllImport(DLL_NAME, EntryPoint = "free_with_handle", CallingConvention = CallingConvention.Cdecl, ExactSpelling = true)]
         public static extern void FreeWithHandle(nint handle);

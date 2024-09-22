@@ -5,14 +5,26 @@
         <TargetFramework>net8.0</TargetFramework>
         <ImplicitUsings>enable</ImplicitUsings>
         <Nullable>enable</Nullable>
+
+        <!-- Directory where Cargo will output the built libraries -->
+        <CargoTargetDirectory>$(MSBuildProjectDirectory)/../Native/target</CargoTargetDirectory>
     </PropertyGroup>
-    
+
     <ItemGroup>
         <Content Include="FlorenceTokenizer.json" CopyToOutputDirectory="PreserveNewest" />
     </ItemGroup>
-
+    
+<!--    <ItemGroup>-->
+<!--        <PackageReference Include="Tokenizers.NET" Version="1.0.3" />-->
+<!--    </ItemGroup>-->
+    
+    <!--    This is only used in development. Since I am the only developer, it will be hardcoded to a dylib file.-->
     <ItemGroup>
-        <PackageReference Include="Tokenizers.NET" Version="1.0.3" />
+        <ProjectReference Include="..\Tokenizers.NET\Tokenizers.NET.csproj" />
+        
+        <!-- macOS ARM64 -->
+        <Content Include="$(CargoTargetDirectory)/release/libtokenizers_net.dylib"
+                 CopyToOutputDirectory="PreserveNewest" 
+        />
     </ItemGroup>
-
 </Project>

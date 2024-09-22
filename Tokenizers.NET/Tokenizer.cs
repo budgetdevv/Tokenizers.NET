@@ -364,6 +364,24 @@ namespace Tokenizers.NET
             }
         }
         
+        public DecodeOutput Decode(ReadOnlySpan<uint> ids, bool skipSpecialTokens)
+        {
+            ref var first = ref MemoryMarshal.GetReference(ids);
+            
+            fixed(uint* ptr = &first)
+            {
+                return Decode((ReadOnlyNativeBuffer<uint>) new(ptr, (nuint) ids.Length), skipSpecialTokens);
+            }
+        }
+        
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public DecodeOutput Decode(ReadOnlyNativeBuffer<uint> ids, bool skipSpecialTokens)
+        {
+            var tokenizerHandle = TokenizerHandle;
+            
+            return TokenizerNativeMethods.TokenizerDecode(tokenizerHandle, ids, skipSpecialTokens);
+        }
+        
         public void Dispose()
         {
             Allocator.Dispose();

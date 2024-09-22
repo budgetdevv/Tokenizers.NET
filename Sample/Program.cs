@@ -1,4 +1,5 @@
-﻿using Tokenizers.NET;
+﻿using System.Text;
+using Tokenizers.NET;
 
 namespace Sample
 {
@@ -35,10 +36,10 @@ namespace Sample
             
             ReadOnlySpan<string> inputTexts = 
             [
-                // "Sunset",
-                // "I'm fine, thank you!",
-                // "I love C#!",
-                GenerateString('H', 4096),
+                "Sunset",
+                "I'm fine, thank you!",
+                "I love C#!",
+                // GenerateString('H', 4096),
             ];
 
             var outputs = tokenizer.Tokenize(inputTexts);
@@ -63,7 +64,15 @@ namespace Sample
                 Attention Mask: {token.AttentionMask.AsReadOnlySpan().GetSpanPrintString()}
                 """);
 
-                Console.WriteLine($"Input IDs Length: {token.IDs.Length}"); 
+                Console.WriteLine($"Input IDs Length: {token.IDs.Length}");
+
+                var decodedTextResult = tokenizer.Decode(token.IDs, true);
+                
+                var decodedText = Encoding.UTF8.GetString(decodedTextResult.TextBuffer.AsReadOnlySpan());
+
+                Console.WriteLine(decodedText);
+                
+                decodedTextResult.Dispose();
                 
                 token.Dispose();
             }
@@ -73,7 +82,7 @@ namespace Sample
             var output = tokenizer.Tokenize("Hi");
             
             // Console.WriteLine(output.IDs.AsReadOnlySpan().GetSpanPrintString());
-            Console.WriteLine(output.OverflowingTokens.Length);
+            Console.WriteLine($"Overflowing Tokens Length: {output.OverflowingTokens.Length}");
             
             output.Dispose();
             
