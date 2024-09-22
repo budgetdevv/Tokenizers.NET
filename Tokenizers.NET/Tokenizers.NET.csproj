@@ -23,30 +23,59 @@
     </ItemGroup>
 
     <Target Name="DownloadTokenizersDlls" BeforeTargets="PrepareForBuild">
-        <DownloadFile SourceUrl="https://github.com/budgetdevv/Tokenizers.NET/releases/latest/download/linux-arm64_libtokenizers_net.so" 
-            DestinationFolder="$(OutputPath)/runtimes/linux-arm64/native"
-            DestinationFileName="libtokenizers_net.so"/>
-
-        <DownloadFile SourceUrl="https://github.com/budgetdevv/Tokenizers.NET/releases/latest/download/linux-x64_libtokenizers_net.so" 
-            DestinationFolder="$(OutputPath)/runtimes/linux-x64/native"
-            DestinationFileName="libtokenizers_net.so" />
-        
+        <!-- OSX x64 -->
         <DownloadFile 
-                SourceUrl="https://github.com/budgetdevv/Tokenizers.NET/releases/latest/download/osx-arm64_libtokenizers_net.dylib" 
-                DestinationFolder="$(OutputPath)/runtimes/osx-arm64/native" 
-                DestinationFileName="libtokenizers_net.dylib" />
-        
-        <DownloadFile SourceUrl="https://github.com/budgetdevv/Tokenizers.NET/releases/latest/download/osx-x64_libtokenizers_net.dylib"
+            SourceUrl="https://github.com/budgetdevv/Tokenizers.NET/releases/latest/download/osx-x64_libtokenizers_net.dylib" 
             DestinationFolder="$(OutputPath)/runtimes/osx-x64/native"
-            DestinationFileName="libtokenizers_net.dylib" />
+            DestinationFileName="libtokenizers_net.dylib"
+            SkipUnchangedFiles="true"
+            Condition="!Exists('$(OutputPath)/runtimes/osx-x64/native/libtokenizers_net.dylib')"
+        />
         
-        <DownloadFile SourceUrl="https://github.com/budgetdevv/Tokenizers.NET/releases/latest/download/win-x64_tokenizers_net.dll"
+        <!-- OSX ARM64 -->
+        <DownloadFile 
+            SourceUrl="https://github.com/budgetdevv/Tokenizers.NET/releases/latest/download/osx-arm64_libtokenizers_net.dylib"
+            DestinationFolder="$(OutputPath)/runtimes/osx-arm64/native"
+            DestinationFileName="libtokenizers_net.dylib"
+            SkipUnchangedFiles="true"
+            Condition="!Exists('$(OutputPath)/runtimes/osx-arm64/native/libtokenizers_net.dylib')"
+        />
+
+        <!-- Windows x64 -->
+        <DownloadFile 
+            SourceUrl="https://github.com/budgetdevv/Tokenizers.NET/releases/latest/download/win-x64_tokenizers_net.dll"
             DestinationFolder="$(OutputPath)/runtimes/win-x64/native"
-            DestinationFileName="tokenizers_net.dll" />
+            DestinationFileName="tokenizers_net.dll"
+            SkipUnchangedFiles="true"
+            Condition="!Exists('$(OutputPath)/runtimes/win-x64/native/tokenizers_net.dll')"
+        />
         
-        <DownloadFile SourceUrl="https://github.com/budgetdevv/Tokenizers.NET/releases/latest/download/win-arm64_tokenizers_net.dll"
+        <!-- Windows ARM64 -->
+        <DownloadFile 
+            SourceUrl="https://github.com/budgetdevv/Tokenizers.NET/releases/latest/download/win-arm64_tokenizers_net.dll"
             DestinationFolder="$(OutputPath)/runtimes/win-arm64/native"
-            DestinationFileName="tokenizers_net.dll" />
+            DestinationFileName="tokenizers_net.dll"
+            SkipUnchangedFiles="true"
+            Condition="!Exists('$(OutputPath)/runtimes/win-arm64/native/tokenizers_net.dll')"
+        />
+
+        <!-- Linux x64 -->
+        <DownloadFile
+                SourceUrl="https://github.com/budgetdevv/Tokenizers.NET/releases/latest/download/linux-x64_libtokenizers_net.so"
+                DestinationFolder="$(OutputPath)/runtimes/linux-x64/native"
+                DestinationFileName="libtokenizers_net.so"
+                SkipUnchangedFiles="true"
+                Condition="!Exists('$(OutputPath)/runtimes/linux-x64/native/libtokenizers_net.so')"
+        />
+
+        <!-- Linux ARM64 -->
+        <DownloadFile
+                SourceUrl="https://github.com/budgetdevv/Tokenizers.NET/releases/latest/download/linux-arm64_libtokenizers_net.so"
+                DestinationFolder="$(OutputPath)/runtimes/linux-arm64/native"
+                DestinationFileName="libtokenizers_net.so"
+                SkipUnchangedFiles="true"
+                Condition="!Exists('$(OutputPath)/runtimes/linux-arm64/native/libtokenizers_net.so')"
+        />
     </Target>
 
     <!-- Include native libraries from the latest release -->
