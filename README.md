@@ -22,6 +22,10 @@ dotnet add package Tokenizers.NET --version 1.0.5
 
 ( Who uses Windows ARM lol )
 
+# View test status
+
+https://budgetdevv.github.io/Tokenizers.NET/
+
 
 # How to build
 
