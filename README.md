@@ -21,3 +21,13 @@ dotnet add package Tokenizers.NET --version 1.0.5
 - Windows ( ARM64 / x86_64 )
 
 ( Who uses Windows ARM lol )
+
+
+# How to build
+
+- Navigate to project's root directory
+
+```
+dotnet clean
+dotnet build -c Release -v:m
+```
