@@ -3,14 +3,33 @@
 name: NUnit Tests and Deploy Allure Reports
 
 on:
-#  push:
-#    branches:
-#      - main
-  workflow_run:
-    workflows: ["Build"]
-    types:
-      - completed
+  push:
+    branches:
+      - main
+
 jobs:
+  wait:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v2
+        with:
+          repository: 'budgetdevv/wait-for-workflow-action'
+      
+      - name: Debug Paths
+        run: ls -l ./
+  
+      - name: Wait for Build Workflow
+        uses: budgetdevv/wait-for-workflow-action@1.3.0
+        with:
+          GITHUB_TOKEN: ${{ secrets.REPOSITORY_DISPATCH_TOKEN }}
+          workflow_id: 'Build.yml'
+          max_wait_minutes: '3'
+          interval: '5'
+          timeout: '60'
+          org_name: 'budgetdevv'
+          repo_name: 'Tokenizers.NET'
+          ref: '${{ github.ref }}'
   test:
     runs-on: macos-latest
     steps:

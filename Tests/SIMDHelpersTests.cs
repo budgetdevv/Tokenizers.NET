@@ -19,6 +19,7 @@ namespace Tests
         
         private Tokenizer<Config> Tokenizer;
         
+        // What if Rust code doesn't change?
         [SetUp]
         public void Setup()
         {
