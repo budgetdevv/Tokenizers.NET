@@ -11,11 +11,8 @@
     </PropertyGroup>
 
     <ItemGroup>
-        <Content Include="FlorenceTokenizer.json" CopyToOutputDirectory="PreserveNewest" />
-    </ItemGroup>
-
-    <ItemGroup>
-        <Content Include="OverflowingTokenizer.json" CopyToOutputDirectory="PreserveNewest" />
+        <Content Include="../SampleTokenizers/FlorenceTokenizer.json" CopyToOutputDirectory="PreserveNewest" />
+        <Content Include="../SampleTokenizers/OverflowingTokenizer.json" CopyToOutputDirectory="PreserveNewest" />
     </ItemGroup>
     
 <!--    <ItemGroup>-->
