@@ -1,3 +1,3 @@
 "Status","Start Time","Stop Time","Duration in ms","Parent Suite","Suite","Sub Suite","Test Class","Test Method","Name","Description"
-"passed","Mon Sep 23 05:13:42 GMT 2024","Mon Sep 23 05:13:43 GMT 2024","625","","","","SIMDHelpersTests","WidenTest","WidenTest",""
-"passed","Mon Sep 23 05:13:41 GMT 2024","Mon Sep 23 05:13:42 GMT 2024","577","","","","SIMDHelpersTests","NarrowMutating","NarrowMutating",""
+"passed","Mon Sep 23 05:15:09 GMT 2024","Mon Sep 23 05:15:09 GMT 2024","564","","","","SIMDHelpersTests","WidenTest","WidenTest",""
+"passed","Mon Sep 23 05:15:08 GMT 2024","Mon Sep 23 05:15:09 GMT 2024","583","","","","SIMDHelpersTests","NarrowMutating","NarrowMutating",""
