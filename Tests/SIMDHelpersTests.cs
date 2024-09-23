@@ -59,9 +59,39 @@ namespace Tests
         }
         
         [Test]
-        public void FooTest()
+        public void NarrowMutating()
         {
-            Assert.Fail();
+            const nuint MAX_VALUE = 500;
+            
+            for (nuint i = 0; i <= MAX_VALUE; i++)
+            {
+                using var srcBuffer = new NativeMemory<ulong>(i);
+
+                var srcMemory = srcBuffer.Memory.AsSpan();
+
+                var currentIndex = 0;
+                
+                foreach (ref var slot in srcMemory)
+                {
+                    slot = (ulong) currentIndex++;
+                }
+
+                // Copy the values before they get mutated
+                var srcMemoryArr = srcMemory.ToArray();
+                
+                var mutated = srcBuffer.Memory.NarrowMutating();
+
+                // Console.WriteLine($"Mutated length: {mutated.Length}");
+                // Console.WriteLine($"Source length: {srcBuffer.Memory.Length}");
+
+                var srcLength = srcBuffer.Memory.Length;
+                
+                (mutated.Length / 2).Should().Be(srcLength);
+                
+                var mutatedSpan = mutated.AsSpan().Slice(0, (int) srcLength);
+
+                mutatedSpan.ToArray().Should().BeEquivalentTo(srcMemoryArr);
+            }
         }
     }
 }
