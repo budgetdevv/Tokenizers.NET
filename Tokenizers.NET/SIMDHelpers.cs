@@ -180,7 +180,7 @@ namespace Tokenizers.NET
                 Debug.Assert(diff > 0);
                 #endif
                 
-                var lastDestVecStart = currentDestPtr - (currentSrcPtr - lastSrcVecStart);
+                var lastDestVecStart = currentDestPtr - diff;
                 
                 if (Avx2.IsSupported)
                 {
@@ -192,13 +192,6 @@ namespace Tokenizers.NET
                 
                     var lastDestVec = Vector256.Load(lastDestVecStart);
                     
-                    // // Mask last diff number of LBS-s
-                    // // Unsigned right shift ( >>> ) to avoid arithmetic shift
-                    //
-                    // // Assume diff is 3 for the sharplab link
-                    // // https://sharplab.io/#v2:EYLgxg9gTgpgtADwGwBYA0AXEUCuA7AHwAEAmARgFgAoa/MACxjAGsYATACg+AE8MYAlAAIu3PoKFwywgHxyRADklCAzAPUA6AApQAlngwAhfQEMoPDgIDc1W1SIqhRMkickhxvGZ4AJGABsABxgoAGdqAG9qIRinR2dXIhQhHX0jU3MODHpdUKFefiEASTxAnAwBaNioqli6pzIATg4AYQg8ADcQjA0AFQgAZQw9PABzDhKyjDQhEgFtEzYAGRgAMwwOBRmAcgAGbfUbWtiAX2oToA=
-                    // var mask = unchecked((byte) (((byte) -1) >>> (8 - diff)));
-
                     // The last diff number of LBS-s are zeroed, the rest are 1
                     // https://sharplab.io/#v2:EYLgxg9gTgpgtADwGwBYA0AXEUCuA7AHwAEAmARgFgAoa/MACxjAGsYATACg+AE8MYAlNz4wAdAFkAhggBqkgDY4YAAgA8q5QGYBA0QAUoASzwYAQsclQeHAQG5qDqkU3KiZJK5LLzeSzwASMPIADjBQAM7UAN7UynGuLm4eRCjKBsZmFlYcGPSG4cq8/MoAknjBOBgCsfExVPENrmQAnBwAwhB4AG5hGKIAKhAAyhhGeADmHGUVGGjKJLp6kmwAMjAAZhgcABxzAOQADHs69vXxAL7U50A=
                     var mask = unchecked((byte) (byte.MaxValue << (int) diff));
