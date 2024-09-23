@@ -61,7 +61,7 @@ namespace Tests
         [Test]
         public void FooTest()
         {
-            
+            Assert.Fail();
         }
     }
 }
