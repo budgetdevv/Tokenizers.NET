@@ -1,6 +1,7 @@
 using System;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+using Tokenizers.NET.Helpers;
 
 namespace Tokenizers.NET.Collections
 {
@@ -42,6 +43,12 @@ namespace Tokenizers.NET.Collections
         {
             return Unsafe.BitCast<NativeBuffer<T>, ReadOnlyNativeBuffer<T>>(this);
         }
+        
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public NativeBuffer<F> Cast<F>() where F: unmanaged
+        {
+            return new((F*) Ptr, UnsafeHelpers.CalculateCastLength<T, F>(Length));
+        }
     }
     
     [StructLayout(LayoutKind.Sequential)]
@@ -82,6 +89,12 @@ namespace Tokenizers.NET.Collections
         public NativeBuffer<T> AsWritable()
         {
             return Unsafe.BitCast<ReadOnlyNativeBuffer<T>, NativeBuffer<T>>(this);
+        }
+        
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public ReadOnlyNativeBuffer<F> Cast<F>() where F: unmanaged
+        {
+            return new((F*) Ptr, UnsafeHelpers.CalculateCastLength<T, F>(Length));
         }
     }
 }
