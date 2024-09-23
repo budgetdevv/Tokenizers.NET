@@ -364,6 +364,7 @@ namespace Tokenizers.NET
             }
         }
         
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public DecodeOutput Decode(ReadOnlySpan<uint> ids, bool skipSpecialTokens)
         {
             ref var first = ref MemoryMarshal.GetReference(ids);
@@ -380,6 +381,35 @@ namespace Tokenizers.NET
             var tokenizerHandle = TokenizerHandle;
             
             return TokenizerNativeMethods.TokenizerDecode(tokenizerHandle, ids, skipSpecialTokens);
+        }
+        
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public DecodeOutput DecodeMutating(Span<ulong> ids, bool skipSpecialTokens)
+        {
+            fixed (ulong* ptr = &MemoryMarshal.GetReference(ids))
+            {
+                var tokenizerHandle = TokenizerHandle;
+                
+                var idsBuffer = new NativeBuffer<ulong>(ptr, (nuint) ids.Length);
+                
+                return DecodeMutating(idsBuffer, skipSpecialTokens);
+            }
+        }
+        
+        public DecodeOutput DecodeMutating(NativeBuffer<ulong> ids, bool skipSpecialTokens)
+        {
+            var tokenizerHandle = TokenizerHandle;
+
+            var mutated = ids.NarrowMutating().AsReadOnly();
+            
+            // The length should still be the same, even though the actual underlying length is double
+            mutated = new(mutated.Ptr, ids.Length);
+            
+            return TokenizerNativeMethods.TokenizerDecode(
+                tokenizerHandle, 
+                mutated,
+                skipSpecialTokens
+            );
         }
         
         public void Dispose()
