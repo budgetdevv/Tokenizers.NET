@@ -8,28 +8,19 @@ namespace Tests
     [AllureNUnit]
     public sealed class SIMDHelpersTests
     {
-        private struct Config: ITokenizerConfig
-        {
-            public static uint ExpectedMaxInputLength => 1024;
-            
-            public static uint ExpectedMaxBatches => 5;
-            
-            public static string TokenizerJsonPath => "FlorenceTokenizer.json";
-        }
-        
-        private Tokenizer<Config> Tokenizer;
+        private Tokenizer<Configs.FlorenceConfig> FlorenceTokenizer;
         
         // What if Rust code doesn't change?
         [SetUp]
         public void Setup()
         {
-            Tokenizer = new();
+            FlorenceTokenizer = new();
         }
 
         [TearDown]
         public void TearDown()
         {
-            Tokenizer.Dispose();
+            FlorenceTokenizer.Dispose();
         }
         
         [Test]
