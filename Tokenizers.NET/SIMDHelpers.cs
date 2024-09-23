@@ -55,7 +55,7 @@ namespace Tokenizers.NET
             
             if (srcLength < (nuint) Vector<uint>.Count)
             {
-                goto Short;
+                goto Scalar;
             }
             
             var srcLengthTruncated = srcLength & ~((nuint) Vector<uint>.Count - 1);
@@ -99,7 +99,7 @@ namespace Tokenizers.NET
             
             return;
             
-            Short:
+            Scalar:
             for (; currentSrcPtr < lastSrcOffsetByOne; currentSrcPtr++, currentDestPtr++)
             {
                 *currentDestPtr = *currentSrcPtr;
@@ -113,17 +113,31 @@ namespace Tokenizers.NET
             NarrowInternal(
                 srcBuffer,
                 destBuffer: reinterpreted,
-                performLengthCheck: false
+                performLengthCheck: false,
+                overlapping: true
             );
 
             return reinterpreted;
+        }
+        
+        public static void NarrowNonOverlapping(
+            this NativeBuffer<ulong> srcBuffer,
+            NativeBuffer<uint> destBuffer)
+        {
+            NarrowInternal(
+                srcBuffer,
+                destBuffer,
+                performLengthCheck: true,
+                overlapping: false
+            );
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static void NarrowInternal(
             this NativeBuffer<ulong> srcBuffer,
             NativeBuffer<uint> destBuffer,
-            bool performLengthCheck)
+            bool performLengthCheck,
+            bool overlapping)
         {
             if (performLengthCheck)
             {
@@ -181,40 +195,54 @@ namespace Tokenizers.NET
                 #endif
                 
                 var lastDestVecStart = currentDestPtr - diff;
-                
-                if (Avx2.IsSupported)
-                {
-                    // Load the last source vec
-                    var lastSrcVecLow = Vector256.Load(lastSrcVecStart);
-                    var lastSrcVecHigh = Vector256.Load(lastSrcVecStart + Vector<ulong>.Count);
-                    
-                    var lastNarrowedVec = Vector256.Narrow(lastSrcVecLow, lastSrcVecHigh);
-                
-                    var lastDestVec = Vector256.Load(lastDestVecStart);
-                    
-                    // The last diff number of LBS-s are zeroed, the rest are 1
-                    // https://sharplab.io/#v2:EYLgxg9gTgpgtADwGwBYA0AXEUCuA7AHwAEAmARgFgAoa/MACxjAGsYATACg+AE8MYAlNz4wAdAFkAhggBqkgDY4YAAgA8q5QGYBA0QAUoASzwYAQsclQeHAQG5qDqkU3KiZJK5LLzeSzwASMPIADjBQAM7UAN7UynGuLm4eRCjKBsZmFlYcGPSG4cq8/MoAknjBOBgCsfExVPENrmQAnBwAwhB4AG5hGKIAKhAAyhhGeADmHGUVGGjKJLp6kmwAMjAAZhgcABxzAOQADHs69vXxAL7U50A=
-                    var mask = unchecked((byte) (byte.MaxValue << (int) diff));
 
-                    // Imagine diff is 3, we get 11111000
-                    // The mask reads from LSB
-                    // So for the first 3 elements, we take from lastDestVec ( The original value )
-                    // And the remaining we take from lastNarrowedVec ( The narrowed value )
-                    lastNarrowedVec = Avx2.Blend(
-                        lastDestVec, // Clear bit means take from this vec
-                        lastNarrowedVec, // Set bit means take from this vec
-                        mask
-                    );
+                if (overlapping)
+                {
+                    if (Avx2.IsSupported)
+                    {
+                        // Load the last source vec
+                        var lastSrcVecLow = Vector256.Load(lastSrcVecStart);
+                        var lastSrcVecHigh = Vector256.Load(lastSrcVecStart + Vector<ulong>.Count);
                     
-                    lastNarrowedVec.Store(lastDestVecStart);
-                }
+                        var lastNarrowedVec = Vector256.Narrow(lastSrcVecLow, lastSrcVecHigh);
                 
+                        var lastDestVec = Vector256.Load(lastDestVecStart);
+                    
+                        // The last diff number of LBS-s are zeroed, the rest are 1
+                        // https://sharplab.io/#v2:EYLgxg9gTgpgtADwGwBYA0AXEUCuA7AHwAEAmARgFgAoa/MACxjAGsYATACg+AE8MYAlNz4wAdAFkAhggBqkgDY4YAAgA8q5QGYBA0QAUoASzwYAQsclQeHAQG5qDqkU3KiZJK5LLzeSzwASMPIADjBQAM7UAN7UynGuLm4eRCjKBsZmFlYcGPSG4cq8/MoAknjBOBgCsfExVPENrmQAnBwAwhB4AG5hGKIAKhAAyhhGeADmHGUVGGjKJLp6kmwAMjAAZhgcABxzAOQADHs69vXxAL7U50A=
+                        var mask = unchecked((byte) (byte.MaxValue << (int) diff));
+
+                        // Imagine diff is 3, we get 11111000
+                        // The mask reads from LSB
+                        // So for the first 3 elements, we take from lastDestVec ( The original value )
+                        // And the remaining we take from lastNarrowedVec ( The narrowed value )
+                        lastNarrowedVec = Avx2.Blend(
+                            lastDestVec, // Clear bit means take from this vec
+                            lastNarrowedVec, // Set bit means take from this vec
+                            mask
+                        );
+                    
+                        lastNarrowedVec.Store(lastDestVecStart);
+                    }
+                
+                    else
+                    {
+                        // Not really worth it I believe, just fallback to scalar
+                        currentSrcPtr = firstSrcPtr + srcLengthTruncated;
+                        currentDestPtr = firstDestPtr + srcLengthTruncated;
+                        goto Scalar;
+                    }
+                }
+
                 else
                 {
-                    // Not really worth it I believe, just fallback to scalar
-                    currentSrcPtr = firstSrcPtr + srcLengthTruncated;
-                    currentDestPtr = firstDestPtr + srcLengthTruncated;
-                    goto Scalar;
+                    // Load the last source vec
+                    var lastSrcVecLow = Vector.Load(lastSrcVecStart);
+                    var lastSrcVecHigh = Vector.Load(lastSrcVecStart + Vector<ulong>.Count);
+                    
+                    var lastNarrowedVec = Vector.Narrow(lastSrcVecLow, lastSrcVecHigh);
+                
+                    lastNarrowedVec.Store(lastDestVecStart);
                 }
             }
             
