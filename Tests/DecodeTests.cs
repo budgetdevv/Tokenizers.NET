@@ -32,8 +32,21 @@ namespace Tests
             {
                 for (var i = 0; i < charSpan.Length; i++)
                 {
-                    // https://www.asciitable.com/
-                    charSpan[i] = (char) random.Next(32, 126 + 1);
+                    while (true)
+                    {
+                        // https://www.asciitable.com/
+                        var generatedChar = (char) random.Next(32, 126 + 1);
+                    
+                        // Make sure it doesn't accidentally generate special tokens such as <s>
+                        if (generatedChar is '<' or '>')
+                        {
+                            continue;
+                        }
+                        
+                        charSpan[i] = generatedChar;
+
+                        break;
+                    }
                 }
             });
         }
@@ -63,15 +76,7 @@ namespace Tests
                 
                 using var decodeOutput = tokenizer.DecodeMutating(widenedIDs, true);
                 
-                try
-                {
-                    decodeOutput.ToString().Should().Be(text);
-                }
-                
-                catch (Exception e)
-                {
-                    return;
-                }
+                decodeOutput.ToString().Should().Be(text);
             }
         }
     }
