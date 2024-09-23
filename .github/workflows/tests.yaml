@@ -8,30 +8,31 @@ on:
       - main
 
 jobs:
-  wait:
+  waitForWorkflows:
+    name: Wait for workflows
     runs-on: ubuntu-latest
+    if: always()
     steps:
-      - name: Checkout Repository
-        uses: actions/checkout@v2
+      - name: Checkout repository
+        uses: actions/checkout@v3
         with:
-          repository: 'budgetdevv/wait-for-workflow-action'
-      
-      - name: Debug Paths
-        run: ls -l ./
-  
-      - name: Wait for Build Workflow
-        uses: budgetdevv/wait-for-workflow-action@1.3.0
+          ref: ${{ github.event.pull_request.head.sha || github.event.merge_group.head_sha }}
+
+      - name: Wait for workflows
+        id: wait
+        uses: budgetdevv/chainlink-github-actions/utils/wait-for-workflows@main
         with:
-          GITHUB_TOKEN: ${{ secrets.REPOSITORY_DISPATCH_TOKEN }}
-          workflow_id: 'Build.yml'
-          max_wait_minutes: '3'
-          interval: '5'
-          timeout: '60'
-          org_name: 'budgetdevv'
-          repo_name: 'Tokenizers.NET'
-          ref: '${{ github.ref }}'
+          max-timeout: "900"
+          polling-interval: "30"
+          exclude-workflow-names: ""
+          exclude-workflow-ids: ""
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+        env:
+          DEBUG: "true"
+          
   test:
     runs-on: macos-latest
+    needs: [waitForWorkflows]
     steps:
       - name: Checkout code
         uses: actions/checkout@v4.1.1
