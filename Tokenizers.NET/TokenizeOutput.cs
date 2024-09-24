@@ -1,23 +1,37 @@
 using System;
-using System.Buffers;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using Tokenizers.NET.Collections;
 
 namespace Tokenizers.NET
 {
+    public interface ITokenizeOutput
+    {
+        public ReadOnlyNativeBuffer<uint> IDs { get; }
+        
+        public ReadOnlyNativeBuffer<uint> AttentionMask { get; }
+        
+        public ReadOnlyNativeBuffer<uint> SpecialTokensMask { get; }
+    }
+    
     [StructLayout(LayoutKind.Sequential)]
-    public readonly struct TokenizeOutputOverflowedToken
+    public readonly struct TokenizeOutputOverflowedToken: ITokenizeOutput
     {
         public readonly ReadOnlyNativeBuffer<uint> IDs;
 
         public readonly ReadOnlyNativeBuffer<uint> AttentionMask;
 
         public readonly ReadOnlyNativeBuffer<uint> SpecialTokensMask;
+        
+        ReadOnlyNativeBuffer<uint> ITokenizeOutput.IDs => IDs;
+        
+        ReadOnlyNativeBuffer<uint> ITokenizeOutput.AttentionMask => AttentionMask;
+        
+        ReadOnlyNativeBuffer<uint> ITokenizeOutput.SpecialTokensMask => SpecialTokensMask;
     }
     
     [StructLayout(LayoutKind.Sequential)]
-    public readonly unsafe struct TokenizeOutput: IDisposable
+    public readonly unsafe struct TokenizeOutput: ITokenizeOutput, IDisposable
     {
         public readonly ReadOnlyNativeBuffer<uint> IDs;
 
@@ -30,14 +44,75 @@ namespace Tokenizers.NET
         public readonly nint OriginalOutputFreeHandle;
         
         private readonly nint OverflowingTokensFreeHandle;
+        
+        ReadOnlyNativeBuffer<uint> ITokenizeOutput.IDs => IDs;
+        
+        ReadOnlyNativeBuffer<uint> ITokenizeOutput.AttentionMask => AttentionMask;
+        
+        ReadOnlyNativeBuffer<uint> ITokenizeOutput.SpecialTokensMask => SpecialTokensMask;
+        
+        private interface IGatherFieldAccessor
+        {
+            public static abstract ReadOnlyNativeBuffer<uint> AccessField<T>(T item)
+                where T: struct, ITokenizeOutput;
+        }
+
+        private struct AccessIDs: IGatherFieldAccessor
+        {
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            public static ReadOnlyNativeBuffer<uint> AccessField<T>(T item)
+                where T: struct, ITokenizeOutput
+            {
+                return item.IDs;
+            }
+        }
+        
+        private struct AccessAttentionMask: IGatherFieldAccessor
+        {
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            public static ReadOnlyNativeBuffer<uint> AccessField<T>(T item)
+                where T: struct, ITokenizeOutput
+            {
+                return item.AttentionMask;
+            }
+        }
+        
+        private struct AccessSpecialTokensMask: IGatherFieldAccessor
+        {
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            public static ReadOnlyNativeBuffer<uint> AccessField<T>(T item)
+                where T: struct, ITokenizeOutput
+            {
+                return item.SpecialTokensMask;
+            }
+        }
 
         public void GatherIDsInclusiveOfOverflowing(NativeBuffer<uint> idsBuffer, bool performRangeCheck)
         {
-            var ids = IDs;
+            GatherIDsInclusiveOfOverflowingCore<AccessIDs>(idsBuffer, performRangeCheck);
+        }
+        
+        public void GatherAttentionMaskInclusiveOfOverflowing(NativeBuffer<uint> attentionMaskBuffer, bool performRangeCheck)
+        {
+            GatherIDsInclusiveOfOverflowingCore<AccessAttentionMask>(attentionMaskBuffer, performRangeCheck);
+        }
+        
+        public void GatherSpecialTokensMaskInclusiveOfOverflowing(NativeBuffer<uint> specialTokensMaskBuffer, bool performRangeCheck)
+        {
+            GatherIDsInclusiveOfOverflowingCore<AccessSpecialTokensMask>(specialTokensMaskBuffer, performRangeCheck);
+        }
+        
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private void GatherIDsInclusiveOfOverflowingCore<FieldAccesorT>(
+            NativeBuffer<uint> idsBuffer, 
+            bool performRangeCheck)
+            where FieldAccesorT: struct, IGatherFieldAccessor
+        {
+            var sourceBuffer = FieldAccesorT.AccessField(this);
 
             var overflowingTokens = OverflowingTokens;
             
-            var segmentLength = (int) ids.Length;
+            var segmentLength = (int) sourceBuffer.Length;
 
             var numSegments = overflowingTokens.Length + 1;
             
@@ -45,13 +120,13 @@ namespace Tokenizers.NET
             {
                 if (idsBuffer.Length < (numSegments * (nuint) segmentLength))
                 {
-                    throw new ArgumentException("The provided buffer is too small to hold all the IDs.");
+                    throw new ArgumentException("The provided buffer is too small.");
                 }
             }
 
             var currentDstPtr = idsBuffer.Ptr;
             
-            var sourceSpan = ids.AsReadOnlySpan();
+            var sourceSpan = sourceBuffer.AsReadOnlySpan();
 
             var enumerator = overflowingTokens.AsReadOnlySpan().GetEnumerator();
 
@@ -63,7 +138,7 @@ namespace Tokenizers.NET
                 
                 if (enumerator.MoveNext())
                 {
-                    sourceSpan = enumerator.Current.IDs.AsReadOnlySpan();
+                    sourceSpan = FieldAccesorT.AccessField(enumerator.Current).AsReadOnlySpan();
                     continue;
                 }
                 
