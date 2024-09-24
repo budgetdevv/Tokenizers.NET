@@ -121,7 +121,7 @@ namespace Tests
             
             var gatherBuffer = gatherMemory.Memory;
             
-            tokenizeResult.GatherIDsInclusiveOfOverflowing(gatherBuffer, performRangeCheck: true);
+            tokenizeResult.GatherIDsInclusiveOfOverflowing(gatherBuffer);
             
             var gatheredIDs = gatherBuffer.AsSpan();
             
@@ -132,6 +132,106 @@ namespace Tests
             var decodedText = decodeOutput.ToString();
             
             decodedText.Should().Be(text);
+            
+            tokenizeResult.Dispose();
+        }
+        
+        private static ulong[] WidenSafely(ReadOnlyNativeBuffer<uint> source)
+        {
+            var sourceSpan = source.AsReadOnlySpan();
+            
+            var widened = new ulong[sourceSpan.Length];
+            
+            for (var i = 0; i < sourceSpan.Length; i++)
+            {
+                widened[i] = sourceSpan[i];
+            }
+
+            return widened;
+        }
+
+        [Test]
+        public void EncodeOverflowingWiden()
+        {
+            ref var tokenizer = ref OverflowingTokenizer;
+            
+            var expectedMaxInputLength = (nuint) Configs.OverflowingTokenizer.ExpectedMaxInputLength;
+            
+            var length = expectedMaxInputLength;
+
+            string text;
+            
+            TokenizeOutput tokenizeResult;
+            
+            ReadOnlyNativeBuffer<TokenizeOutputOverflowedToken> overflowingTokens;
+
+            nuint numOverflowingTokensSegments;
+            
+            while (true)
+            {
+                text = AllocateStringWithRandomChars((int) length);
+                
+                tokenizeResult = tokenizer.Tokenize(text);
+                
+                overflowingTokens = tokenizeResult.OverflowingTokens;
+
+                numOverflowingTokensSegments = overflowingTokens.Length;
+                
+                if (numOverflowingTokensSegments > 0)
+                {
+                    break;
+                }
+                
+                tokenizeResult.Dispose();
+                length *= 2;
+            }
+            
+            var expectedTotalIDLength = (int) (expectedMaxInputLength * 2);
+            
+            var ids = new List<ulong>(expectedTotalIDLength);
+            var attentionMask = new List<ulong>(expectedTotalIDLength);
+            var specialTokensMask = new List<ulong>(expectedTotalIDLength);
+            
+            ids.AddRange(WidenSafely(tokenizeResult.IDs));
+            
+            attentionMask.AddRange(WidenSafely(tokenizeResult.AttentionMask));
+            
+            specialTokensMask.AddRange(WidenSafely(tokenizeResult.SpecialTokensMask));
+            
+            foreach (var overflowingToken in overflowingTokens.AsReadOnlySpan())
+            {
+                var overflowingIDs = overflowingToken.IDs;
+                var overflowingAttentionMask = overflowingToken.AttentionMask;
+                var overflowingSpecialTokensMask = overflowingToken.SpecialTokensMask;
+                
+                overflowingIDs.Length.Should().Be(expectedMaxInputLength);
+                overflowingAttentionMask.Length.Should().Be(expectedMaxInputLength);
+                overflowingSpecialTokensMask.Length.Should().Be(expectedMaxInputLength);
+                
+                ids.AddRange(WidenSafely(overflowingIDs));
+                attentionMask.AddRange(WidenSafely(overflowingAttentionMask));
+                specialTokensMask.AddRange(WidenSafely(overflowingSpecialTokensMask));
+            }
+            
+            ids.Count.Should().Be(expectedTotalIDLength);
+            attentionMask.Count.Should().Be(expectedTotalIDLength);
+            specialTokensMask.Count.Should().Be(expectedTotalIDLength);
+            
+            var idsSpan = CollectionsMarshal.AsSpan(ids);
+            var attentionMaskSpan = CollectionsMarshal.AsSpan(attentionMask);
+            var specialTokensMaskSpan = CollectionsMarshal.AsSpan(specialTokensMask);
+
+            using var idGatherResult = tokenizeResult.GatherAndWidenIDsInclusiveOfOverflowing();
+            using var attentionMaskGatherResult = tokenizeResult.GatherAndWidenAttentionMaskInclusiveOfOverflowing();
+            using var specialTokensMaskGatherResult = tokenizeResult.GatherAndWidenSpecialTokensMaskInclusiveOfOverflowing();
+            
+            var gatheredIDs = idGatherResult.Memory.AsSpan();
+            var gatheredAttentionMask = attentionMaskGatherResult.Memory.AsSpan();
+            var gatheredSpecialTokensMask = specialTokensMaskGatherResult.Memory.AsSpan();
+            
+            gatheredIDs.SequenceEqual(idsSpan).Should().BeTrue();
+            gatheredAttentionMask.SequenceEqual(attentionMaskSpan).Should().BeTrue();
+            gatheredSpecialTokensMask.SequenceEqual(specialTokensMaskSpan).Should().BeTrue();
             
             tokenizeResult.Dispose();
         }
