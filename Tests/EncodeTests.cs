@@ -121,7 +121,9 @@ namespace Tests
             
             var gatherBuffer = gatherMemory.Buffer;
             
-            tokenizeResult.GatherIDsInclusiveOfOverflowing(gatherBuffer);
+            tokenizeResult.GatherIDsInclusiveOfOverflowing(gatherBuffer, out var gatheredLength);
+            
+            gatheredLength.Should().Be((nuint) expectedTotalIDLength);
             
             var gatheredIDs = gatherBuffer.AsSpan();
             

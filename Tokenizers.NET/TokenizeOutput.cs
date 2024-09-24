@@ -87,44 +87,74 @@ namespace Tokenizers.NET
             }
         }
 
-        public void GatherIDsInclusiveOfOverflowing(NativeBuffer<uint> idsBuffer)
+        public void GatherIDsInclusiveOfOverflowing(
+            NativeBuffer<uint> idsBuffer,
+            out nuint totalLength)
         {
-            GatherIDsInclusiveOfOverflowingCore<AccessIDs>(idsBuffer, performRangeCheck: true);
+            GatherIDsInclusiveOfOverflowingCore<AccessIDs>(
+                idsBuffer,
+                performRangeCheck: true,
+                out totalLength
+            );
         }
         
         public NativeMemory<uint> GatherIDsInclusiveOfOverflowing()
         {
             var idsBuffer = new NativeMemory<uint>(IDs.Length * (OverflowingTokens.Length + 1));
             
-            GatherIDsInclusiveOfOverflowingCore<AccessIDs>(idsBuffer.Buffer, performRangeCheck: false);
+            GatherIDsInclusiveOfOverflowingCore<AccessIDs>(
+                idsBuffer.Buffer,
+                performRangeCheck: false,
+                out _
+            );
             
             return idsBuffer;
         }
         
-        public void GatherAttentionMaskInclusiveOfOverflowing(NativeBuffer<uint> attentionMaskBuffer)
+        public void GatherAttentionMaskInclusiveOfOverflowing(
+            NativeBuffer<uint> attentionMaskBuffer,
+            out nuint totalLength)
         {
-            GatherIDsInclusiveOfOverflowingCore<AccessAttentionMask>(attentionMaskBuffer, performRangeCheck: true);
+            GatherIDsInclusiveOfOverflowingCore<AccessAttentionMask>(
+                attentionMaskBuffer, 
+                performRangeCheck: true,
+                out totalLength
+            );
         }
         
         public NativeMemory<uint> GatherAttentionMaskInclusiveOfOverflowing()
         {
             var attentionMaskBuffer = new NativeMemory<uint>(AttentionMask.Length * (OverflowingTokens.Length + 1));
             
-            GatherIDsInclusiveOfOverflowingCore<AccessAttentionMask>(attentionMaskBuffer.Buffer, performRangeCheck: false);
+            GatherIDsInclusiveOfOverflowingCore<AccessAttentionMask>(
+                attentionMaskBuffer.Buffer,
+                performRangeCheck: false,
+                out _
+            );
             
             return attentionMaskBuffer;
         }
         
-        public void GatherSpecialTokensMaskInclusiveOfOverflowing(NativeBuffer<uint> specialTokensMaskBuffer)
+        public void GatherSpecialTokensMaskInclusiveOfOverflowing(
+            NativeBuffer<uint> specialTokensMaskBuffer,
+            out nuint totalLength)
         {
-            GatherIDsInclusiveOfOverflowingCore<AccessSpecialTokensMask>(specialTokensMaskBuffer, performRangeCheck: true);
+            GatherIDsInclusiveOfOverflowingCore<AccessSpecialTokensMask>(
+                specialTokensMaskBuffer,
+                performRangeCheck: true,
+                out totalLength
+            );
         }
         
         public NativeMemory<uint> GatherSpecialTokensMaskInclusiveOfOverflowing()
         {
             var specialTokensMaskBuffer = new NativeMemory<uint>(SpecialTokensMask.Length * (OverflowingTokens.Length + 1));
             
-            GatherIDsInclusiveOfOverflowingCore<AccessSpecialTokensMask>(specialTokensMaskBuffer.Buffer, performRangeCheck: false);
+            GatherIDsInclusiveOfOverflowingCore<AccessSpecialTokensMask>(
+                specialTokensMaskBuffer.Buffer,
+                performRangeCheck: false,
+                out _
+            );
             
             return specialTokensMaskBuffer;
         }
@@ -132,7 +162,8 @@ namespace Tokenizers.NET
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private void GatherIDsInclusiveOfOverflowingCore<FieldAccessorT>(
             NativeBuffer<uint> idsBuffer, 
-            bool performRangeCheck)
+            bool performRangeCheck,
+            out nuint totalLength)
             where FieldAccessorT: struct, IGatherFieldAccessor
         {
             var sourceBuffer = FieldAccessorT.AccessField(this);
@@ -143,9 +174,11 @@ namespace Tokenizers.NET
 
             var numSegments = overflowingTokens.Length + 1;
             
+            totalLength = numSegments * (nuint) segmentLength;
+            
             if (performRangeCheck)
             {
-                if (idsBuffer.Length < (numSegments * (nuint) segmentLength))
+                if (idsBuffer.Length < totalLength)
                 {
                     throw new ArgumentException("The provided buffer is too small.");
                 }
@@ -173,44 +206,74 @@ namespace Tokenizers.NET
             }
         }
 
-        public void GatherAndWidenIDsInclusiveOfOverflowing(NativeBuffer<ulong> idsBuffer)
+        public void GatherAndWidenIDsInclusiveOfOverflowing(
+            NativeBuffer<ulong> idsBuffer, 
+            out nuint totalLength)
         {
-            GatherAndWidenIDsInclusiveOfOverflowingCore<AccessIDs>(idsBuffer, performRangeCheck: true);
+            GatherAndWidenIDsInclusiveOfOverflowingCore<AccessIDs>(
+                idsBuffer,
+                performRangeCheck: true,
+                out totalLength
+            );
         }
 
         public NativeMemory<ulong> GatherAndWidenIDsInclusiveOfOverflowing()
         {
             var idsBuffer = new NativeMemory<ulong>(IDs.Length * (OverflowingTokens.Length + 1));
             
-            GatherAndWidenIDsInclusiveOfOverflowingCore<AccessIDs>(idsBuffer.Buffer, performRangeCheck: false);
+            GatherAndWidenIDsInclusiveOfOverflowingCore<AccessIDs>(
+                idsBuffer.Buffer,
+                performRangeCheck: false,
+                out _
+            );
             
             return idsBuffer;
         }
         
-        public void GatherAndWidenAttentionMaskInclusiveOfOverflowing(NativeBuffer<ulong> attentionMaskBuffer)
+        public void GatherAndWidenAttentionMaskInclusiveOfOverflowing(
+            NativeBuffer<ulong> attentionMaskBuffer,
+            out nuint totalLength)
         {
-            GatherAndWidenIDsInclusiveOfOverflowingCore<AccessAttentionMask>(attentionMaskBuffer, performRangeCheck: true);
+            GatherAndWidenIDsInclusiveOfOverflowingCore<AccessAttentionMask>(
+                attentionMaskBuffer,
+                performRangeCheck: true,
+                out totalLength
+            );
         }
         
         public NativeMemory<ulong> GatherAndWidenAttentionMaskInclusiveOfOverflowing()
         {
             var attentionMaskBuffer = new NativeMemory<ulong>(AttentionMask.Length * (OverflowingTokens.Length + 1));
             
-            GatherAndWidenIDsInclusiveOfOverflowingCore<AccessAttentionMask>(attentionMaskBuffer.Buffer, performRangeCheck: false);
+            GatherAndWidenIDsInclusiveOfOverflowingCore<AccessAttentionMask>(
+                attentionMaskBuffer.Buffer,
+                performRangeCheck: false,
+                out _
+            );
             
             return attentionMaskBuffer;
         }
         
-        public void GatherAndWidenSpecialTokensMaskInclusiveOfOverflowing(NativeBuffer<ulong> specialTokensMaskBuffer)
+        public void GatherAndWidenSpecialTokensMaskInclusiveOfOverflowing(
+            NativeBuffer<ulong> specialTokensMaskBuffer,
+            out nuint totalLength)
         {
-            GatherAndWidenIDsInclusiveOfOverflowingCore<AccessSpecialTokensMask>(specialTokensMaskBuffer, performRangeCheck: true);
+            GatherAndWidenIDsInclusiveOfOverflowingCore<AccessSpecialTokensMask>(
+                specialTokensMaskBuffer,
+                performRangeCheck: true,
+                out totalLength
+            );
         }
         
         public NativeMemory<ulong> GatherAndWidenSpecialTokensMaskInclusiveOfOverflowing()
         {
             var specialTokensMaskBuffer = new NativeMemory<ulong>(SpecialTokensMask.Length * (OverflowingTokens.Length + 1));
             
-            GatherAndWidenIDsInclusiveOfOverflowingCore<AccessSpecialTokensMask>(specialTokensMaskBuffer.Buffer, performRangeCheck: false);
+            GatherAndWidenIDsInclusiveOfOverflowingCore<AccessSpecialTokensMask>(
+                specialTokensMaskBuffer.Buffer,
+                performRangeCheck: false,
+                out _
+            );
             
             return specialTokensMaskBuffer;
         }
@@ -218,7 +281,8 @@ namespace Tokenizers.NET
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private void GatherAndWidenIDsInclusiveOfOverflowingCore<FieldAccessorT>(
             NativeBuffer<ulong> idsBuffer, 
-            bool performRangeCheck)
+            bool performRangeCheck,
+            out nuint totalLength)
             where FieldAccessorT: struct, IGatherFieldAccessor
         {
             var sourceBuffer = FieldAccessorT.AccessField(this);
@@ -229,9 +293,11 @@ namespace Tokenizers.NET
 
             var numSegments = overflowingTokens.Length + 1;
             
+            totalLength = numSegments * (nuint) segmentLength;
+            
             if (performRangeCheck)
             {
-                if (idsBuffer.Length < (numSegments * (nuint) segmentLength))
+                if (idsBuffer.Length < totalLength)
                 {
                     throw new ArgumentException("The provided buffer is too small.");
                 }
