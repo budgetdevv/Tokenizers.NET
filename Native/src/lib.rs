@@ -275,7 +275,7 @@ pub unsafe extern "C" fn tokenizer_encode_core(
 {
     let tokenizer = &*tokenizer_ptr;
 
-    let text = str::from_utf8_unchecked(text_buffer.as_slice());
+    let text = std::str::from_utf8_unchecked(text_buffer.as_slice());
 
     let encoded_result = tokenizer.encode_fast(text, true);
 
@@ -318,7 +318,7 @@ pub unsafe extern "C" fn tokenizer_encode_batch_core(
     let texts = text_buffers
         .as_slice()
         .iter()
-        .map(|text_buffer| str::from_utf8_unchecked(text_buffer.as_slice()))
+        .map(|text_buffer| std::str::from_utf8_unchecked(text_buffer.as_slice()))
         .collect::<Vec<&str>>();
 
     let encoded_result = tokenizer.encode_batch_fast(texts, true);
