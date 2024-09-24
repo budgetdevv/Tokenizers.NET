@@ -70,7 +70,7 @@ namespace Tests
                 
                 using var widenedIDsMemory = tokenizedIDs.Widen();
                 
-                var widenedIDs = widenedIDsMemory.Memory;
+                var widenedIDs = widenedIDsMemory.Buffer;
 
                 // Console.WriteLine(widenedIDs.AsSpan().GetSpanPrintString());
                 

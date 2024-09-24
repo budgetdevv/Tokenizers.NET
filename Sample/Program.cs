@@ -41,7 +41,7 @@ namespace Sample
 
             var outputs = tokenizer.Tokenize(inputTexts);
             
-            var outputSpan = outputs.Memory.AsSpan();
+            var outputSpan = outputs.Buffer.AsSpan();
 
             var index = 0;
             
@@ -75,7 +75,7 @@ namespace Sample
                 
                 Input IDs: {tokenIDs.AsReadOnlySpan().GetSpanPrintString()}
                 
-                Input IDs Widen: {tokenIDs.Widen().Memory.AsSpan().GetSpanPrintString()}
+                Input IDs Widen: {tokenIDs.Widen().Buffer.AsSpan().GetSpanPrintString()}
                 
                 Attention Mask: {token.AttentionMask.AsReadOnlySpan().GetSpanPrintString()}
                 

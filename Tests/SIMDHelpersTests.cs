@@ -33,8 +33,8 @@ namespace Tests
                 using var srcBuffer = new NativeMemory<uint>(i);
                 using var destBuffer = new NativeMemory<ulong>(i);
 
-                var srcMemory = srcBuffer.Memory;
-                var destMemory = destBuffer.Memory;
+                var srcMemory = srcBuffer.Buffer;
+                var destMemory = destBuffer.Buffer;
 
                 var srcSpan = srcMemory.AsSpan();
                 var destSpan = destMemory.AsSpan();
@@ -46,7 +46,7 @@ namespace Tests
                     slot = (uint) currentIndex++;
                 }
 
-                srcBuffer.Memory.AsReadOnly().Widen(destBuffer.Memory);
+                srcBuffer.Buffer.AsReadOnly().Widen(destBuffer.Buffer);
                 
                 srcSpan.ToArray().Should().BeEquivalentTo(destSpan.ToArray());
             }
@@ -61,7 +61,7 @@ namespace Tests
             {
                 using var srcBuffer = new NativeMemory<ulong>(i);
 
-                var srcMemory = srcBuffer.Memory;
+                var srcMemory = srcBuffer.Buffer;
                 
                 var srcSpan = srcMemory.AsSpan();
 
@@ -100,8 +100,8 @@ namespace Tests
                 using var srcBuffer = new NativeMemory<ulong>(i);
                 using var destBuffer = new NativeMemory<uint>(i);
 
-                var srcMemory = srcBuffer.Memory;
-                var destMemory = destBuffer.Memory;
+                var srcMemory = srcBuffer.Buffer;
+                var destMemory = destBuffer.Buffer;
 
                 var srcSpan = srcMemory.AsSpan();
                 var destSpan = destMemory.AsSpan();

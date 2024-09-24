@@ -5,7 +5,7 @@ namespace Tokenizers.NET.Collections
 {
     public readonly unsafe struct NativeMemory<T>: IDisposable where T : unmanaged
     {
-        public readonly NativeBuffer<T> Memory;
+        public readonly NativeBuffer<T> Buffer;
 
         public NativeMemory()
         {
@@ -16,12 +16,12 @@ namespace Tokenizers.NET.Collections
         {
             var ptr = (T*) NativeMemory.Alloc(length, (nuint) sizeof(T));
             
-            Memory = new(ptr, length);
+            Buffer = new(ptr, length);
         }
 
         public void Dispose()
         {
-            NativeMemory.Free(Memory.Ptr);
+            NativeMemory.Free(Buffer.Ptr);
         }
     }
 }

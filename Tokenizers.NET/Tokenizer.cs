@@ -228,7 +228,7 @@ namespace Tokenizers.NET
             {
                 nativeMemory = new(inputLength);
                         
-                allocation = nativeMemory.Memory.AsSpan();
+                allocation = nativeMemory.Buffer.AsSpan();
             }
 
             Encoding.UTF8.TryGetBytes(input, allocation, out var bytesWritten);
@@ -249,7 +249,7 @@ namespace Tokenizers.NET
         {
             TokenizeInternal(
                 inputs, 
-                outputs.Memory.AsSpan(), 
+                outputs.Buffer.AsSpan(), 
                 outputsPrePinned: true,
                 skipLengthCheck: false
             );
@@ -261,7 +261,7 @@ namespace Tokenizers.NET
             
             TokenizeInternal(
                 inputs, 
-                outputs.Memory.AsSpan(), 
+                outputs.Buffer.AsSpan(), 
                 outputsPrePinned: true,
                 skipLengthCheck: true
             );
@@ -314,7 +314,7 @@ namespace Tokenizers.NET
                         var nativeMemory = new NativeMemory<byte>(inputLength);
                         nativeAllocations.Add(nativeMemory);
                         
-                        allocation = nativeMemory.Memory.AsSpan();
+                        allocation = nativeMemory.Buffer.AsSpan();
                     }
 
                     Encoding.UTF8.TryGetBytes(input, allocation, out var bytesWritten);

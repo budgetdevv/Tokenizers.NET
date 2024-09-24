@@ -96,7 +96,7 @@ namespace Tokenizers.NET
         {
             var idsBuffer = new NativeMemory<uint>(IDs.Length * (OverflowingTokens.Length + 1));
             
-            GatherIDsInclusiveOfOverflowingCore<AccessIDs>(idsBuffer.Memory, performRangeCheck: false);
+            GatherIDsInclusiveOfOverflowingCore<AccessIDs>(idsBuffer.Buffer, performRangeCheck: false);
             
             return idsBuffer;
         }
@@ -110,7 +110,7 @@ namespace Tokenizers.NET
         {
             var attentionMaskBuffer = new NativeMemory<uint>(AttentionMask.Length * (OverflowingTokens.Length + 1));
             
-            GatherIDsInclusiveOfOverflowingCore<AccessAttentionMask>(attentionMaskBuffer.Memory, performRangeCheck: false);
+            GatherIDsInclusiveOfOverflowingCore<AccessAttentionMask>(attentionMaskBuffer.Buffer, performRangeCheck: false);
             
             return attentionMaskBuffer;
         }
@@ -124,7 +124,7 @@ namespace Tokenizers.NET
         {
             var specialTokensMaskBuffer = new NativeMemory<uint>(SpecialTokensMask.Length * (OverflowingTokens.Length + 1));
             
-            GatherIDsInclusiveOfOverflowingCore<AccessSpecialTokensMask>(specialTokensMaskBuffer.Memory, performRangeCheck: false);
+            GatherIDsInclusiveOfOverflowingCore<AccessSpecialTokensMask>(specialTokensMaskBuffer.Buffer, performRangeCheck: false);
             
             return specialTokensMaskBuffer;
         }
@@ -182,7 +182,7 @@ namespace Tokenizers.NET
         {
             var idsBuffer = new NativeMemory<ulong>(IDs.Length * (OverflowingTokens.Length + 1));
             
-            GatherAndWidenIDsInclusiveOfOverflowingCore<AccessIDs>(idsBuffer.Memory, performRangeCheck: false);
+            GatherAndWidenIDsInclusiveOfOverflowingCore<AccessIDs>(idsBuffer.Buffer, performRangeCheck: false);
             
             return idsBuffer;
         }
@@ -196,7 +196,7 @@ namespace Tokenizers.NET
         {
             var attentionMaskBuffer = new NativeMemory<ulong>(AttentionMask.Length * (OverflowingTokens.Length + 1));
             
-            GatherAndWidenIDsInclusiveOfOverflowingCore<AccessAttentionMask>(attentionMaskBuffer.Memory, performRangeCheck: false);
+            GatherAndWidenIDsInclusiveOfOverflowingCore<AccessAttentionMask>(attentionMaskBuffer.Buffer, performRangeCheck: false);
             
             return attentionMaskBuffer;
         }
@@ -210,7 +210,7 @@ namespace Tokenizers.NET
         {
             var specialTokensMaskBuffer = new NativeMemory<ulong>(SpecialTokensMask.Length * (OverflowingTokens.Length + 1));
             
-            GatherAndWidenIDsInclusiveOfOverflowingCore<AccessSpecialTokensMask>(specialTokensMaskBuffer.Memory, performRangeCheck: false);
+            GatherAndWidenIDsInclusiveOfOverflowingCore<AccessSpecialTokensMask>(specialTokensMaskBuffer.Buffer, performRangeCheck: false);
             
             return specialTokensMaskBuffer;
         }

@@ -14,7 +14,7 @@ namespace Tokenizers.NET
         {
             var result = new NativeMemory<ulong>(srcBuffer.Length);
             
-            srcBuffer.WidenInternal(result.Memory, performLengthCheck: false);
+            srcBuffer.WidenInternal(result.Buffer, performLengthCheck: false);
             
             return result;
         }

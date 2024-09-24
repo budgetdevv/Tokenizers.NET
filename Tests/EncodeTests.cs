@@ -119,7 +119,7 @@ namespace Tests
 
             using var gatherMemory = new NativeMemory<uint>((nuint) expectedTotalIDLength);
             
-            var gatherBuffer = gatherMemory.Memory;
+            var gatherBuffer = gatherMemory.Buffer;
             
             tokenizeResult.GatherIDsInclusiveOfOverflowing(gatherBuffer);
             
@@ -225,9 +225,9 @@ namespace Tests
             using var attentionMaskGatherResult = tokenizeResult.GatherAndWidenAttentionMaskInclusiveOfOverflowing();
             using var specialTokensMaskGatherResult = tokenizeResult.GatherAndWidenSpecialTokensMaskInclusiveOfOverflowing();
             
-            var gatheredIDs = idGatherResult.Memory.AsSpan();
-            var gatheredAttentionMask = attentionMaskGatherResult.Memory.AsSpan();
-            var gatheredSpecialTokensMask = specialTokensMaskGatherResult.Memory.AsSpan();
+            var gatheredIDs = idGatherResult.Buffer.AsSpan();
+            var gatheredAttentionMask = attentionMaskGatherResult.Buffer.AsSpan();
+            var gatheredSpecialTokensMask = specialTokensMaskGatherResult.Buffer.AsSpan();
             
             gatheredIDs.SequenceEqual(idsSpan).Should().BeTrue();
             gatheredAttentionMask.SequenceEqual(attentionMaskSpan).Should().BeTrue();
