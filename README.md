@@ -33,5 +33,5 @@ https://budgetdevv.github.io/Tokenizers.NET/
 
 ```
 dotnet clean
-dotnet build -c Release -v:m
+dotnet pack -c Release -v:m /p:DownloadNativeFiles=true 
 ```

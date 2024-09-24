@@ -46,7 +46,7 @@ jobs:
         run: dotnet restore
 
       - name: Test
-        run: dotnet test --framework net8.0 --no-restore
+        run: dotnet test --framework net8.0 --no-restore /p:SetupGHTestWorkflow=true
 
       - name: Upload Allure Results
         uses: actions/upload-artifact@v4.0.0
