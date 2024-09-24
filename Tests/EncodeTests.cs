@@ -94,9 +94,9 @@ namespace Tests
 
             // Console.WriteLine($"Text: {text}");
 
-            var expectedTotalIDLength = expectedMaxInputLength * (numOverflowingTokensSegments + 1);
+            var expectedTotalIDLength = (int) (expectedMaxInputLength * (numOverflowingTokensSegments + 1));
             
-            var ids = new List<uint>((int) expectedTotalIDLength);
+            var ids = new List<uint>(expectedTotalIDLength);
             
             ids.AddRange(tokenizeResult.IDs.AsReadOnlySpan());
             
@@ -113,7 +113,7 @@ namespace Tests
                 // Console.WriteLine(overflowingToken.IDs.AsReadOnlySpan().GetSpanPrintString());
             }
             
-            ids.Count.Should().Be((int) expectedTotalIDLength);
+            ids.Count.Should().Be(expectedTotalIDLength);
             
             using var decodeOutput = tokenizer.Decode(CollectionsMarshal.AsSpan(ids), skipSpecialTokens: true);
             
