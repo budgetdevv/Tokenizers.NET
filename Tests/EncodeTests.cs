@@ -13,7 +13,6 @@ namespace Tests
         
         private Tokenizer<Configs.OverflowingTokenizer> OverflowingTokenizer;
         
-        // What if Rust code doesn't change?
         [SetUp]
         public void Setup()
         {
