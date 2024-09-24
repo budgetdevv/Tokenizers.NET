@@ -1,5 +1,6 @@
 use std::marker::PhantomData;
-use std::ptr::null;
+use std::ptr::{ null, null_mut };
+use std::slice;
 use tokenizers::tokenizer::Tokenizer;
 use tokenizers::Encoding;
 
@@ -32,14 +33,14 @@ impl<T> Buffer<T>
 
     pub unsafe fn to_slice(&self) -> &mut [T]
     {
-        return std::slice::from_raw_parts_mut(self.ptr, self.length)
+        return slice::from_raw_parts_mut(self.ptr, self.length)
     }
 
     pub fn empty() -> Self
     {
         Buffer
         {
-            ptr: std::ptr::null_mut(),
+            ptr: null_mut(),
             length: 0,
         }
     }
@@ -74,7 +75,7 @@ impl<T> ReadOnlyBuffer<T>
 
     pub unsafe fn as_slice(&self) -> &[T]
     {
-        std::slice::from_raw_parts(self.ptr, self.length)
+        return slice::from_raw_parts(self.ptr, self.length)
     }
 
     pub fn from_vec(vec: &mut Vec<T>) -> Self
@@ -93,14 +94,13 @@ impl<T> ReadOnlyBuffer<T>
     {
         ReadOnlyBuffer
         {
-            ptr: std::ptr::null(),
+            ptr: null(),
             length: 0,
         }
     }
 }
 
 pub struct DropHandle<T=()>
-
 {
     pub ptr_to_box: *mut (),
     pub drop_callback: fn(*mut ()),
@@ -235,7 +235,7 @@ pub unsafe extern "C" fn allocate_tokenizer(
     json_bytes_length: usize,
 ) -> *mut Tokenizer
 {
-    let json_bytes = std::slice::from_raw_parts(json_bytes_ptr, json_bytes_length);
+    let json_bytes = slice::from_raw_parts(json_bytes_ptr, json_bytes_length);
 
     let tokenizer = Tokenizer::from_bytes(json_bytes).unwrap();
 
@@ -275,7 +275,7 @@ pub unsafe extern "C" fn tokenizer_encode_core(
 {
     let tokenizer = &*tokenizer_ptr;
 
-    let text = std::str::from_utf8_unchecked(text_buffer.as_slice());
+    let text = str::from_utf8_unchecked(text_buffer.as_slice());
 
     let encoded_result = tokenizer.encode_fast(text, true);
 
@@ -318,7 +318,7 @@ pub unsafe extern "C" fn tokenizer_encode_batch_core(
     let texts = text_buffers
         .as_slice()
         .iter()
-        .map(|text_buffer| std::str::from_utf8_unchecked(text_buffer.as_slice()))
+        .map(|text_buffer| str::from_utf8_unchecked(text_buffer.as_slice()))
         .collect::<Vec<&str>>();
 
     let encoded_result = tokenizer.encode_batch_fast(texts, true);
