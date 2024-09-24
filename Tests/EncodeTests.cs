@@ -115,7 +115,19 @@ namespace Tests
             
             ids.Count.Should().Be(expectedTotalIDLength);
             
-            using var decodeOutput = tokenizer.Decode(CollectionsMarshal.AsSpan(ids), skipSpecialTokens: true);
+            var idsSpan = CollectionsMarshal.AsSpan(ids);
+
+            using var gatherMemory = new NativeMemory<uint>((nuint) expectedTotalIDLength);
+            
+            var gatherBuffer = gatherMemory.Memory;
+            
+            tokenizeResult.GatherIDsInclusiveOfOverflowing(gatherBuffer, performRangeCheck: true);
+            
+            var gatheredIDs = gatherBuffer.AsSpan();
+            
+            gatheredIDs.SequenceEqual(idsSpan).Should().BeTrue();
+            
+            using var decodeOutput = tokenizer.Decode(idsSpan, skipSpecialTokens: true);
             
             var decodedText = decodeOutput.ToString();
             
