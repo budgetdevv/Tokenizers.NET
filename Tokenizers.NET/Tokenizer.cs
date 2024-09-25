@@ -226,12 +226,12 @@ namespace Tokenizers.NET
 
             else
             {
-                nativeMemory = new(inputLength);
+                nativeMemory = new((nuint) Encoding.UTF8.GetMaxByteCount(input.Length));
                         
                 allocation = nativeMemory.Buffer.AsSpan();
             }
 
-            Encoding.UTF8.TryGetBytes(input, allocation, out var bytesWritten);
+            var bytesWritten = Encoding.UTF8.GetBytes(input, allocation);
                 
             var u8String = new ReadOnlyNativeBuffer<byte>(ref MemoryMarshal.GetReference(allocation), (nuint) bytesWritten);
             
