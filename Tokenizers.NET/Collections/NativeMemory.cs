@@ -24,7 +24,7 @@ namespace Tokenizers.NET.Collections
         
         // NativeMemory<T> should have the exact same memory layout as NativeBuffer<T>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public NativeMemory<T> WrapBuffer(NativeBuffer<T> buffer)
+        public static NativeMemory<T> WrapBuffer(NativeBuffer<T> buffer)
         {
             return Unsafe.BitCast<NativeBuffer<T>, NativeMemory<T>>(buffer);
         }
