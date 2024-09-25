@@ -198,7 +198,7 @@ namespace Tokenizers.NET
         {
             Span<byte> allocation;
 
-            var inputLength = (nuint) input.Length;
+            var inputLength = input.Length;
 
             Unsafe.SkipInit(out NativeMemory<byte> nativeMemory);
             
@@ -226,7 +226,7 @@ namespace Tokenizers.NET
 
             else
             {
-                nativeMemory = new((nuint) Encoding.UTF8.GetMaxByteCount(input.Length));
+                nativeMemory = new((nuint) Encoding.UTF8.GetMaxByteCount(inputLength));
                         
                 allocation = nativeMemory.Buffer.AsSpan();
             }
