@@ -22,10 +22,17 @@
     <!--    This is only used in development. Since I am the only developer, it will be hardcoded to a dylib file.-->
     <ItemGroup>
         <ProjectReference Include="..\Tokenizers.NET\Tokenizers.NET.csproj" />
-        
-        <!-- macOS ARM64 -->
+
+        <!-- OSX ARM64 -->
         <Content Include="$(CargoTargetDirectory)/release/libtokenizers_net.dylib"
-                 CopyToOutputDirectory="PreserveNewest" 
+                 CopyToOutputDirectory="PreserveNewest"
+                 Condition="Exists('$(CargoTargetDirectory)/release/libtokenizers_net.dylib')"
+        />
+
+        <!-- Windows x64 -->
+        <Content Include="$(CargoTargetDirectory)/release/tokenizers_net.dll"
+                 CopyToOutputDirectory="PreserveNewest"
+                 Condition="Exists('$(CargoTargetDirectory)/release/tokenizers_net.dll')"
         />
     </ItemGroup>
 </Project>
