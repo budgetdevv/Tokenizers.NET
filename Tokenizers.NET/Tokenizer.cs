@@ -210,7 +210,7 @@ namespace Tokenizers.NET
                 const int MAX_STACK_ALLOC = 4096;
                 
                 // This branch is free
-                if (MAX_STACK_ALLOC <= TempFixedAllocator.BUFFER_SIZE)
+                if (MAX_STACK_ALLOC >= TempFixedAllocator.BUFFER_SIZE)
                 {
                     // A result of a stackalloc expression of this type in this context may be exposed outside of the containing method
                     #pragma warning disable CS9081

@@ -101,7 +101,7 @@ namespace Sample
             
             outputs.Dispose();
 
-            const bool TEST_SINGLE_TOKENIZE = false;
+            const bool TEST_SINGLE_TOKENIZE = true;
             
             if (TEST_SINGLE_TOKENIZE)
             {
