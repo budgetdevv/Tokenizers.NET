@@ -14,7 +14,7 @@ namespace Tests
             
             var nativeBuffer = nativeMemory.Buffer;
             
-            var wrappedMemory = nativeMemory.WrapBuffer(nativeBuffer);
+            var wrappedMemory = NativeMemory<byte>.WrapBuffer(nativeBuffer);
 
             (nativeMemory == wrappedMemory).Should().BeTrue();
         }
