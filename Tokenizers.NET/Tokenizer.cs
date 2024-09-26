@@ -283,8 +283,10 @@ namespace Tokenizers.NET
                 throw new ArgumentException("Number of inputs must be equal to the number of outputs.");
             }
 
+            const int MAX_STACK_ALLOC_NUM_INPUTS = 32;
+
             using var nativeAllocations = new StackList<NativeMemory<byte>>(
-                stackalloc NativeMemory<byte>[numInputs < 32 ? numInputs : 32]
+                stackalloc NativeMemory<byte>[numInputs < MAX_STACK_ALLOC_NUM_INPUTS ? numInputs : MAX_STACK_ALLOC_NUM_INPUTS]
             );
             
             var u8Strings = new NativeBuffer<ReadOnlyNativeBuffer<byte>>(
