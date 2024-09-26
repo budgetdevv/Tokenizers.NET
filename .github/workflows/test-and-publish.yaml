@@ -8,7 +8,7 @@ on:
       - main
 
 jobs:
-  waitForWorkflows:
+  wait-for-workflows:
     name: Wait for workflows
     runs-on: ubuntu-latest
     if: always()
@@ -32,7 +32,7 @@ jobs:
           
   test:
     runs-on: macos-latest
-    needs: [waitForWorkflows]
+    needs: [wait-for-workflows]
     steps:
       - name: Checkout code
         uses: actions/checkout@v4.1.1
@@ -56,7 +56,8 @@ jobs:
           if-no-files-found: error
           retention-days: 20
 
-  report:
+  generate-report:
+    name: Generate and Deploy Allure Report to Github Pages
     needs: test
     
     # "Container action is only supported on Linux"
@@ -88,4 +89,35 @@ jobs:
           PERSONAL_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           PUBLISH_BRANCH: gh-pages
           PUBLISH_DIR: allure-report
+          
+          
+  publish-nuget:
+    needs: test
 
+    runs-on: macos-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4.1.1
+      
+      - name: Get short commit SHA
+        id: vars
+        run: echo "COMMIT_SHA=$(git rev-parse --short HEAD)" >> $GITHUB_ENV
+
+      - name: Set Alpha Version
+        run: |
+          ALPHA_VERSION=alpha-${COMMIT_SHA}
+          echo "ALPHA_VERSION=$ALPHA_VERSION" >> $GITHUB_ENV
+          
+      - name: Restore dependencies
+        working-directory: Tokenizers.NET
+        run: dotnet restore
+          
+      - name: Build NuGet package
+        working-directory: Tokenizers.NET
+        run: dotnet pack -c Release -v:m /p:AlphaVersion=${ALPHA_VERSION} /p:DownloadNativeFiles=true
+      
+      - name: Publish NuGet package
+        working-directory: Tokenizers.NET
+        run: dotnet nuget push -s https://api.nuget.org/v3/index.json -k ${{ secrets.NUGET_API_KEY }} --skip-duplicate bin/Release/*.nupkg
+     

@@ -11,7 +11,7 @@
         <PackageProjectUrl>https://github.com/budgetdevv/Tokenizers.NET</PackageProjectUrl>
         <RepositoryUrl>https://github.com/budgetdevv/Tokenizers.NET</RepositoryUrl>
         <VersionPrefix>1.0.9</VersionPrefix>
-        <VersionSuffix>alpha.3</VersionSuffix>
+        <VersionSuffix>$(AlphaVersion)</VersionSuffix>
     </PropertyGroup>
 
     <PropertyGroup>
