@@ -204,7 +204,6 @@ namespace Tokenizers.NET
             
             var useNativeMemory = inputLength > ConfigT.ExpectedMaxInputLength;
             
-            // ReSharper disable once AssignmentInConditionalExpression
             if (!useNativeMemory)
             {
                 const int MAX_STACK_ALLOC = 4096;
@@ -232,7 +231,7 @@ namespace Tokenizers.NET
             }
 
             var bytesWritten = Encoding.UTF8.GetBytes(input, allocation);
-                
+            
             var u8String = new ReadOnlyNativeBuffer<byte>(ref MemoryMarshal.GetReference(allocation), (nuint) bytesWritten);
             
             var result = TokenizerNativeMethods.TokenizerEncode(TokenizerHandle, u8String, TRUNCATE);
