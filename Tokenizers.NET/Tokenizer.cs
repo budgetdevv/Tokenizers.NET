@@ -183,16 +183,6 @@ namespace Tokenizers.NET
                 (nuint) tokenizerData.Length);
         }
         
-        public void Tokenize(ReadOnlySpan<string> inputs, Span<TokenizeOutput> outputs)
-        {
-            TokenizeInternal(
-                inputs, 
-                outputs, 
-                outputsPrePinned: false,
-                skipLengthCheck: false
-            );
-        }
-        
         [SkipLocalsInit]
         public TokenizeOutput Tokenize(string input)
         {
@@ -244,9 +234,19 @@ namespace Tokenizers.NET
             return result;
         }
         
-        public void Tokenize(ReadOnlySpan<string> inputs, NativeMemory<TokenizeOutput> outputs)
+        public void TokenizeBatch(ReadOnlySpan<string> inputs, Span<TokenizeOutput> outputs)
         {
-            TokenizeInternal(
+            TokenizeBatchInternal(
+                inputs, 
+                outputs, 
+                outputsPrePinned: false,
+                skipLengthCheck: false
+            );
+        }
+        
+        public void TokenizeBatch(ReadOnlySpan<string> inputs, NativeMemory<TokenizeOutput> outputs)
+        {
+            TokenizeBatchInternal(
                 inputs, 
                 outputs.Buffer.AsSpan(), 
                 outputsPrePinned: true,
@@ -254,11 +254,11 @@ namespace Tokenizers.NET
             );
         }
         
-        public NativeMemory<TokenizeOutput> Tokenize(ReadOnlySpan<string> inputs)
+        public NativeMemory<TokenizeOutput> TokenizeBatch(ReadOnlySpan<string> inputs)
         {
             var outputs = new NativeMemory<TokenizeOutput>((nuint) inputs.Length);
             
-            TokenizeInternal(
+            TokenizeBatchInternal(
                 inputs, 
                 outputs.Buffer.AsSpan(), 
                 outputsPrePinned: true,
@@ -270,7 +270,7 @@ namespace Tokenizers.NET
 
         [SkipLocalsInit]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private void TokenizeInternal(
+        private void TokenizeBatchInternal(
             ReadOnlySpan<string> inputs,
             Span<TokenizeOutput> outputs,
             bool outputsPrePinned,

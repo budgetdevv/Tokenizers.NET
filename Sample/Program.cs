@@ -39,7 +39,7 @@ namespace Sample
                 GenerateString('H', 2000),
             ];
 
-            var outputs = tokenizer.Tokenize(inputTexts);
+            var outputs = tokenizer.TokenizeBatch(inputTexts);
             
             var outputSpan = outputs.Buffer.AsSpan();
 
