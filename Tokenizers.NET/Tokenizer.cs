@@ -11,11 +11,21 @@ using Tokenizers.NET.Helpers;
 
 namespace Tokenizers.NET
 {
+    public enum ExceedExpectedMaxBatchesBehavior
+    {
+        AllocateBuffer,
+        AllocatePooledBuffer,
+        // Discard, // TODO: Implement this
+    }
+    
     public interface ITokenizerConfig
     {
         public static abstract uint ExpectedMaxInputLength { get; }
         
         public static abstract uint ExpectedMaxBatches { get; }
+        
+        public static virtual ExceedExpectedMaxBatchesBehavior ExceedExpectedMaxBatchesBehavior
+            => ExceedExpectedMaxBatchesBehavior.AllocatePooledBuffer;
         
         public static abstract string TokenizerJsonPath { get; }
     }
@@ -98,7 +108,9 @@ namespace Tokenizers.NET
             {
                 var count = handle.CurrentCount;
 
-                if (count != 0)
+                // This check is free if ConfigT.ExceedExpectedMaxBatchesBehavior == ExceedExpectedMaxBatchesBehavior.AllocateBuffer,
+                // which in turn eliminates AllocateSlow() call.
+                if (count == 0 || ConfigT.ExceedExpectedMaxBatchesBehavior == ExceedExpectedMaxBatchesBehavior.AllocateBuffer)
                 {
                     var readIndex = handle.CurrentCount = count - 1;
                     
@@ -303,16 +315,20 @@ namespace Tokenizers.NET
                 {
                     Span<byte> allocation;
 
-                    var inputLength = (nuint) input.Length;
+                    var inputLength = input.Length;
                     
-                    if (inputLength <= ConfigT.ExpectedMaxInputLength)
+                    var allocateNative = 
+                        inputLength > ConfigT.ExpectedMaxInputLength || 
+                        (ConfigT.ExceedExpectedMaxBatchesBehavior == ExceedExpectedMaxBatchesBehavior.AllocateBuffer && allocator.CurrentCount == 0);
+                    
+                    if (allocateNative)
                     {
                         allocation = allocator.Allocate();
                     }
 
                     else
                     {
-                        var nativeMemory = new NativeMemory<byte>((nuint) Encoding.UTF8.GetMaxByteCount(input.Length));
+                        var nativeMemory = new NativeMemory<byte>((nuint) Encoding.UTF8.GetMaxByteCount(inputLength));
                         nativeAllocations.Add(nativeMemory);
                         
                         allocation = nativeMemory.Buffer.AsSpan();
