@@ -389,8 +389,6 @@ namespace Tokenizers.NET
         {
             fixed (ulong* ptr = &MemoryMarshal.GetReference(ids))
             {
-                var tokenizerHandle = TokenizerHandle;
-                
                 var idsBuffer = new NativeBuffer<ulong>(ptr, (nuint) ids.Length);
                 
                 return DecodeMutating(idsBuffer, skipSpecialTokens);
