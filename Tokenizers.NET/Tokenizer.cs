@@ -310,13 +310,13 @@ namespace Tokenizers.NET
 
                     else
                     {
-                        var nativeMemory = new NativeMemory<byte>(inputLength);
+                        var nativeMemory = new NativeMemory<byte>((nuint) Encoding.UTF8.GetMaxByteCount(input.Length));
                         nativeAllocations.Add(nativeMemory);
                         
                         allocation = nativeMemory.Buffer.AsSpan();
                     }
 
-                    Encoding.UTF8.TryGetBytes(input, allocation, out var bytesWritten);
+                    var bytesWritten = Encoding.UTF8.GetBytes(input, allocation);
                 
                     *currentU8String = new(ref MemoryMarshal.GetReference(allocation), (nuint) bytesWritten);
                     
