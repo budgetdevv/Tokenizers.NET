@@ -1,0 +1,8 @@
+"Status","Start Time","Stop Time","Duration in ms","Parent Suite","Suite","Sub Suite","Test Class","Test Method","Name","Description"
+"passed","Thu Sep 26 15:22:15 GMT 2024","Thu Sep 26 15:22:16 GMT 2024","895","","","","SIMDHelpersTests","NarrowNonOverlapping","NarrowNonOverlapping",""
+"passed","Thu Sep 26 15:22:14 GMT 2024","Thu Sep 26 15:22:14 GMT 2024","242","","","","DecodeTests","DecodeMutating","DecodeMutating",""
+"passed","Thu Sep 26 15:22:15 GMT 2024","Thu Sep 26 15:22:15 GMT 2024","846","","","","SIMDHelpersTests","NarrowMutating","NarrowMutating",""
+"passed","Thu Sep 26 15:22:16 GMT 2024","Thu Sep 26 15:22:17 GMT 2024","418","","","","SIMDHelpersTests","WidenTest","WidenTest",""
+"passed","Thu Sep 26 15:22:14 GMT 2024","Thu Sep 26 15:22:14 GMT 2024","164","","","","EncodeTests","EncodeOverflowing","EncodeOverflowing",""
+"passed","Thu Sep 26 15:22:14 GMT 2024","Thu Sep 26 15:22:14 GMT 2024","151","","","","EncodeTests","EncodeOverflowingWiden","EncodeOverflowingWiden",""
+"passed","Thu Sep 26 15:22:15 GMT 2024","Thu Sep 26 15:22:15 GMT 2024","1","","","","NativeMemoryTests","WrapBuffer","WrapBuffer",""
