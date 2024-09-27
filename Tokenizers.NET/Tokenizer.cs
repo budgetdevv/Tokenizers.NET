@@ -307,7 +307,7 @@ namespace Tokenizers.NET
             const int MAX_STACK_ALLOC_NUM_INPUTS = 32;
 
             using var nativeAllocations = new StackList<NativeMemory<byte>>(
-                stackalloc NativeMemory<byte>[numInputs < MAX_STACK_ALLOC_NUM_INPUTS ? numInputs : MAX_STACK_ALLOC_NUM_INPUTS]
+                stackalloc NativeMemory<byte>[MAX_STACK_ALLOC_NUM_INPUTS]
             );
             
             var u8Strings = new NativeBuffer<ReadOnlyNativeBuffer<byte>>(
