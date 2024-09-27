@@ -79,7 +79,7 @@ jobs:
       - name: Set Alpha Version
         id: set_version
         run: |
-          ALPHA_VERSION=alpha-${{ steps.bump_version.outputs.NEW_ALPHA_VERSION_NUMBER }}-${{ steps.vars.outputs.COMMIT_SHA }}
+          ALPHA_VERSION=alpha.${{ steps.bump_version.outputs.NEW_ALPHA_VERSION_NUMBER }}-${{ steps.vars.outputs.COMMIT_SHA }}
           echo "ALPHA_VERSION=$ALPHA_VERSION" >> $GITHUB_OUTPUT
 
       - name: Build NuGet package
