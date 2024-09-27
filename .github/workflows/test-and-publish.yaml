@@ -47,7 +47,7 @@ jobs:
         run: dotnet restore
 
       - name: Test
-        run: dotnet test --framework net8.0 --no-restore /p:DownloadNativeFiles=true
+        run: dotnet test --framework net8.0 --no-restore /p:SetupGHTestWorkflow=true
         
       - name: Get short commit SHA
         id: vars
@@ -84,7 +84,7 @@ jobs:
 
       - name: Build NuGet package
         working-directory: Tokenizers.NET
-        run: dotnet pack -c Release -v:m --no-restore /p:AlphaVersion=${{ steps.set_version.outputs.ALPHA_VERSION }}
+        run: dotnet pack -c Release -v:m --no-restore /p:DownloadNativeFiles=true /p:AlphaVersion=${{ steps.set_version.outputs.ALPHA_VERSION }}
 
       - name: Publish NuGet package
         working-directory: Tokenizers.NET
