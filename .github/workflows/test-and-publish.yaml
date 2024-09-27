@@ -102,11 +102,19 @@ jobs:
       - name: Get short commit SHA
         id: vars
         run: echo "COMMIT_SHA=$(git rev-parse --short HEAD)" >> $GITHUB_OUTPUT
+        
+      # https://stackoverflow.com/questions/77882485/github-actions-resource-not-accessible-by-integration 
+      - uses: actions/create-github-app-token@v1
+        id: app-token
+        with:
+          # required
+          app-id: ${{ secrets.APP_ID }}
+          private-key: ${{ secrets.APP_PRIVATE_KEY }}
 
       - name: Get and increment alpha version number
         id: bump_version
         env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_TOKEN: ${{ steps.generate_token.outputs.token }}
         run: |
           CURRENT_ALPHA_VERSION_NUMBER=$(gh variable get ALPHA_VERSION_NUMBER)
           NEW_ALPHA_VERSION_NUMBER=$((CURRENT_ALPHA_VERSION_NUMBER + 1))
@@ -114,7 +122,7 @@ jobs:
 
       - name: Update ALPHA_VERSION_NUMBER in repository variable
         env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_TOKEN: ${{ steps.generate_token.outputs.token }}
         run: |
           gh variable set ALPHA_VERSION_NUMBER -b "${{ steps.bump_version.outputs.NEW_ALPHA_VERSION_NUMBER }}"
 
