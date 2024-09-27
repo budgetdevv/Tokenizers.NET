@@ -205,9 +205,9 @@ namespace Tokenizers.NET
 
             Unsafe.SkipInit(out NativeMemory<byte> nativeMemory);
             
-            var useNativeMemory = inputLength > ConfigT.ExpectedMaxInputLength;
+            var allocateNative = inputLength > ConfigT.ExpectedMaxInputLength;
             
-            if (!useNativeMemory)
+            if (!allocateNative)
             {
                 const int MAX_STACK_ALLOC = 4096;
                 
@@ -244,7 +244,7 @@ namespace Tokenizers.NET
                 TRUNCATE
             );
             
-            if (useNativeMemory)
+            if (allocateNative)
             {
                 nativeMemory.Dispose();
             }
