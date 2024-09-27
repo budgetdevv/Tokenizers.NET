@@ -305,19 +305,13 @@ namespace Tokenizers.NET
             }
 
             const int MAX_STACK_ALLOC_NUM_INPUTS = 32;
-
-            // Sadly we can't use indices...u8Strings contain sliced buffers, not the full allocation
-            
-            // using var nativeAllocationsIndices = new StackList<uint>(
-            //     stackalloc uint[MAX_STACK_ALLOC_NUM_INPUTS]
-            // );
             
             using var nativeAllocations = new StackList<NativeMemory<byte>>(
                 stackalloc NativeMemory<byte>[MAX_STACK_ALLOC_NUM_INPUTS]
             );
             
             using var u8Strings = new StackList<ReadOnlyNativeBuffer<byte>>(
-                stackalloc ReadOnlyNativeBuffer<byte>[numInputs]
+                stackalloc ReadOnlyNativeBuffer<byte>[MAX_STACK_ALLOC_NUM_INPUTS]
             );
             
             using var allocator = Allocator.GetHandle();
@@ -340,10 +334,6 @@ namespace Tokenizers.NET
                 else
                 {
                     var nativeMemory = new NativeMemory<byte>((nuint) Encoding.UTF8.GetMaxByteCount(inputLength));
-
-                    // var currentIndex = (uint) u8Strings.Count;
-                    //
-                    // nativeAllocations.Add(currentIndex);
                     
                     nativeAllocations.Add(nativeMemory);
                         
@@ -389,13 +379,6 @@ namespace Tokenizers.NET
                     );
                 }
             }
-
-            // var readonlyU8StringsPtr = readonlyU8Strings.Ptr;
-            //
-            // foreach (var nativeMemoryIndex in nativeAllocations.AsSpan())
-            // {
-            //     readonlyU8StringsPtr[nativeMemoryIndex]
-            // }
 
             foreach (var nativeMemory in nativeAllocations.AsSpan())
             {
