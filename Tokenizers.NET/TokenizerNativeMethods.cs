@@ -18,40 +18,50 @@ namespace Tokenizers.NET
         public static TokenizeOutput TokenizerEncode(
             nint tokenizerPtr,
             ReadOnlyNativeBuffer<byte> textNativeBuffer,
+            bool addSpecialTokens,
             bool truncate)
         {
             if (truncate)
             {
-                return TokenizerEncode(tokenizerPtr, textNativeBuffer);
+                return TokenizerEncode(tokenizerPtr, textNativeBuffer, addSpecialTokens);
             }
 
             else
             {
-                return TokenizerEncodeNonTruncating(tokenizerPtr, textNativeBuffer);
+                return TokenizerEncodeNonTruncating(tokenizerPtr, textNativeBuffer, addSpecialTokens);
             }
         }
         
         [DllImport(DLL_NAME, EntryPoint = "tokenizer_encode", CallingConvention = CallingConvention.Cdecl, ExactSpelling = true)]
-        private static extern TokenizeOutput TokenizerEncode(nint tokenizerPtr, ReadOnlyNativeBuffer<byte> textNativeBuffer);
+        private static extern TokenizeOutput TokenizerEncode(
+            nint tokenizerPtr,
+            ReadOnlyNativeBuffer<byte> textNativeBuffer,
+            [MarshalAs(UnmanagedType.U1)] bool addSpecialTokens
+        );
         
         [DllImport(DLL_NAME, EntryPoint = "tokenizer_encode_non_truncating", CallingConvention = CallingConvention.Cdecl, ExactSpelling = true)]
-        private static extern TokenizeOutput TokenizerEncodeNonTruncating(nint tokenizerPtr, ReadOnlyNativeBuffer<byte> textNativeBuffer);
+        private static extern TokenizeOutput TokenizerEncodeNonTruncating(
+            nint tokenizerPtr,
+            ReadOnlyNativeBuffer<byte> textNativeBuffer,
+            [MarshalAs(UnmanagedType.U1)] bool addSpecialTokens
+        );
         
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static void TokenizerEncodeBatch(
             nint tokenizerPtr, 
             ReadOnlyNativeBuffer<ReadOnlyNativeBuffer<byte>> textNativeBuffers, 
             NativeBuffer<TokenizeOutput> outputNativeBuffer,
+            bool addSpecialTokens,
             bool truncate)
         {
             if (truncate)
             {
-                TokenizerEncodeBatch(tokenizerPtr, textNativeBuffers, outputNativeBuffer);
+                TokenizerEncodeBatch(tokenizerPtr, textNativeBuffers, outputNativeBuffer, addSpecialTokens);
             }
             
             else
             {
-                TokenizerEncodeBatchNonTruncating(tokenizerPtr, textNativeBuffers, outputNativeBuffer);
+                TokenizerEncodeBatchNonTruncating(tokenizerPtr, textNativeBuffers, outputNativeBuffer, addSpecialTokens);
             }
         }
         
@@ -59,14 +69,16 @@ namespace Tokenizers.NET
         private static extern void TokenizerEncodeBatch(
             nint tokenizerPtr, 
             ReadOnlyNativeBuffer<ReadOnlyNativeBuffer<byte>> textNativeBuffers, 
-            NativeBuffer<TokenizeOutput> outputNativeBuffer
+            NativeBuffer<TokenizeOutput> outputNativeBuffer,
+            [MarshalAs(UnmanagedType.U1)] bool addSpecialTokens
         );
         
         [DllImport(DLL_NAME, EntryPoint = "tokenizer_encode_batch_non_truncating", CallingConvention = CallingConvention.Cdecl, ExactSpelling = true)]
         private static extern void TokenizerEncodeBatchNonTruncating(
             nint tokenizerPtr, 
             ReadOnlyNativeBuffer<ReadOnlyNativeBuffer<byte>> textNativeBuffers, 
-            NativeBuffer<TokenizeOutput> outputNativeBuffer
+            NativeBuffer<TokenizeOutput> outputNativeBuffer,
+            [MarshalAs(UnmanagedType.U1)] bool addSpecialTokens
         );
         
         [MethodImpl(MethodImplOptions.AggressiveInlining)]

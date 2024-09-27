@@ -196,7 +196,7 @@ namespace Tokenizers.NET
         }
         
         [SkipLocalsInit]
-        public TokenizeOutput Tokenize(string input)
+        public TokenizeOutput Tokenize(string input, bool addSpecialTokens = true)
         {
             Span<byte> allocation;
 
@@ -236,7 +236,12 @@ namespace Tokenizers.NET
             
             var u8String = new ReadOnlyNativeBuffer<byte>(ref MemoryMarshal.GetReference(allocation), (nuint) bytesWritten);
             
-            var result = TokenizerNativeMethods.TokenizerEncode(TokenizerHandle, u8String, TRUNCATE);
+            var result = TokenizerNativeMethods.TokenizerEncode(
+                TokenizerHandle, 
+                u8String,
+                addSpecialTokens,
+                TRUNCATE
+            );
             
             if (useNativeMemory)
             {
@@ -246,27 +251,29 @@ namespace Tokenizers.NET
             return result;
         }
         
-        public void TokenizeBatch(ReadOnlySpan<string> inputs, Span<TokenizeOutput> outputs)
+        public void TokenizeBatch(ReadOnlySpan<string> inputs, Span<TokenizeOutput> outputs, bool addSpecialTokens = true)
         {
             TokenizeBatchInternal(
                 inputs, 
                 outputs, 
                 outputsPrePinned: false,
-                skipLengthCheck: false
+                skipLengthCheck: false,
+                addSpecialTokens: addSpecialTokens
             );
         }
         
-        public void TokenizeBatch(ReadOnlySpan<string> inputs, NativeMemory<TokenizeOutput> outputs)
+        public void TokenizeBatch(ReadOnlySpan<string> inputs, NativeMemory<TokenizeOutput> outputs, bool addSpecialTokens = true)
         {
             TokenizeBatchInternal(
                 inputs, 
                 outputs.Buffer.AsSpan(), 
                 outputsPrePinned: true,
-                skipLengthCheck: false
+                skipLengthCheck: false,
+                addSpecialTokens: addSpecialTokens
             );
         }
         
-        public NativeMemory<TokenizeOutput> TokenizeBatch(ReadOnlySpan<string> inputs)
+        public NativeMemory<TokenizeOutput> TokenizeBatch(ReadOnlySpan<string> inputs, bool addSpecialTokens = true)
         {
             var outputs = new NativeMemory<TokenizeOutput>((nuint) inputs.Length);
             
@@ -274,7 +281,8 @@ namespace Tokenizers.NET
                 inputs, 
                 outputs.Buffer.AsSpan(), 
                 outputsPrePinned: true,
-                skipLengthCheck: true
+                skipLengthCheck: true,
+                addSpecialTokens: addSpecialTokens
             );
             
             return outputs;
@@ -286,7 +294,8 @@ namespace Tokenizers.NET
             ReadOnlySpan<string> inputs,
             Span<TokenizeOutput> outputs,
             bool outputsPrePinned,
-            bool skipLengthCheck)
+            bool skipLengthCheck,
+            bool addSpecialTokens)
         {
             var numInputs = inputs.Length;
             
@@ -358,6 +367,7 @@ namespace Tokenizers.NET
                     tokenizerPtr: tokenizerHandle,
                     textNativeBuffers: readonlyU8Strings,
                     outputNativeBuffer: new(ref outputStart, outputLengthNative),
+                    addSpecialTokens,
                     truncate
                 );
             }
@@ -370,6 +380,7 @@ namespace Tokenizers.NET
                         tokenizerPtr: tokenizerHandle,
                         textNativeBuffers: readonlyU8Strings,
                         outputNativeBuffer: new(outputsPtr, outputLengthNative),
+                        addSpecialTokens,
                         truncate
                     );
                 }

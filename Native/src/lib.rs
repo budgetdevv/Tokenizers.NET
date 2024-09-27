@@ -253,31 +253,46 @@ pub unsafe extern "C" fn free_tokenizer(tokenizer_handle: *mut Tokenizer)
 #[no_mangle]
 pub unsafe extern "C" fn tokenizer_encode(
     tokenizer_ptr: *mut Tokenizer,
-    text_buffer: ReadOnlyBuffer<u8>) -> TokenizeOutput
+    text_buffer: ReadOnlyBuffer<u8>,
+    add_special_tokens: bool)
+    -> TokenizeOutput
 {
-    return tokenizer_encode_core(tokenizer_ptr, text_buffer, true);
+    return tokenizer_encode_core(
+        tokenizer_ptr,
+        text_buffer,
+        true,
+        add_special_tokens
+    );
 }
 
 #[no_mangle]
 pub unsafe extern "C" fn tokenizer_encode_non_truncating(
     tokenizer_ptr: *mut Tokenizer,
-    text_buffer: ReadOnlyBuffer<u8>) -> TokenizeOutput
+    text_buffer: ReadOnlyBuffer<u8>,
+    add_special_tokens: bool)
+    -> TokenizeOutput
 {
-    return tokenizer_encode_core(tokenizer_ptr, text_buffer, false);
+    return tokenizer_encode_core(
+        tokenizer_ptr,
+        text_buffer,
+        false,
+        add_special_tokens
+    );
 }
 
 #[inline(always)]
 pub unsafe extern "C" fn tokenizer_encode_core(
     tokenizer_ptr: *mut Tokenizer,
     text_buffer: ReadOnlyBuffer<u8>,
-    truncate: bool)
+    truncate: bool,
+    add_special_tokens: bool)
     -> TokenizeOutput
 {
     let tokenizer = &*tokenizer_ptr;
 
     let text = std::str::from_utf8_unchecked(text_buffer.as_slice());
 
-    let encoded_result = tokenizer.encode_fast(text, true);
+    let encoded_result = tokenizer.encode_fast(text, add_special_tokens);
 
     let encoded_tokens = match encoded_result
     {
@@ -292,18 +307,32 @@ pub unsafe extern "C" fn tokenizer_encode_core(
 pub unsafe extern "C" fn tokenizer_encode_batch(
     tokenizer_ptr: *mut Tokenizer,
     text_buffers: ReadOnlyBuffer<ReadOnlyBuffer<u8>>,
-    output_buffer: Buffer<TokenizeOutput>)
+    output_buffer: Buffer<TokenizeOutput>,
+    add_special_tokens: bool)
 {
-    tokenizer_encode_batch_core(tokenizer_ptr, text_buffers, output_buffer, true);
+    tokenizer_encode_batch_core(
+        tokenizer_ptr,
+        text_buffers,
+        output_buffer,
+        true,
+        add_special_tokens
+    );
 }
 
 #[no_mangle]
 pub unsafe extern "C" fn tokenizer_encode_batch_non_truncating(
     tokenizer_ptr: *mut Tokenizer,
     text_buffers: ReadOnlyBuffer<ReadOnlyBuffer<u8>>,
-    output_buffer: Buffer<TokenizeOutput>)
+    output_buffer: Buffer<TokenizeOutput>,
+    add_special_tokens: bool)
 {
-    tokenizer_encode_batch_core(tokenizer_ptr, text_buffers, output_buffer, false);
+    tokenizer_encode_batch_core(
+        tokenizer_ptr,
+        text_buffers,
+        output_buffer,
+        false,
+        add_special_tokens
+    );
 }
 
 #[inline(always)]
@@ -311,7 +340,8 @@ pub unsafe extern "C" fn tokenizer_encode_batch_core(
     tokenizer_ptr: *mut Tokenizer,
     text_buffers: ReadOnlyBuffer<ReadOnlyBuffer<u8>>,
     output_buffer: Buffer<TokenizeOutput>,
-    truncate: bool)
+    truncate: bool,
+    add_special_tokens: bool)
 {
     let tokenizer = &*tokenizer_ptr;
 
@@ -321,7 +351,7 @@ pub unsafe extern "C" fn tokenizer_encode_batch_core(
         .map(|text_buffer| std::str::from_utf8_unchecked(text_buffer.as_slice()))
         .collect::<Vec<&str>>();
 
-    let encoded_result = tokenizer.encode_batch_fast(texts, true);
+    let encoded_result = tokenizer.encode_batch_fast(texts, add_special_tokens);
 
     let encoded_tokens = match encoded_result
     {
