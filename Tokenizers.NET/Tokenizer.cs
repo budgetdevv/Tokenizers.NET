@@ -301,7 +301,7 @@ namespace Tokenizers.NET
             
             if (!skipLengthCheck && numInputs != outputs.Length)
             {
-                throw new ArgumentException("Number of inputs must be equal to the number of outputs.");
+                ThrowHelpers.TokenizeBatchInternalLengthCheckFailed();
             }
 
             const int MAX_STACK_ALLOC_NUM_INPUTS = 32;
