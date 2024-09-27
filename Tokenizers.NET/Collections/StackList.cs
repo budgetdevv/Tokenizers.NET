@@ -82,10 +82,17 @@ namespace Tokenizers.NET.Collections
                 Ptr = (T*) NativeMemory.Realloc(oldPtr, byteCount: newCapacity * (nuint) sizeof(T));
             }
         }
-
+        
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public Span<T> AsSpan()
         {
             return new(Ptr, Count);
+        }
+        
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public NativeBuffer<T> AsSlicedNativeBuffer()
+        {
+            return new(Ptr, (nuint) Count);
         }
         
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
