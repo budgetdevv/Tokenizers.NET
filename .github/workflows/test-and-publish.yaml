@@ -114,7 +114,7 @@ jobs:
       - name: Get and increment alpha version number
         id: bump_version
         env:
-          GH_TOKEN: ${{ steps.generate_token.outputs.token }}
+          GH_TOKEN: ${{ steps.app-token.outputs.token }}
         run: |
           CURRENT_ALPHA_VERSION_NUMBER=$(gh variable get ALPHA_VERSION_NUMBER)
           NEW_ALPHA_VERSION_NUMBER=$((CURRENT_ALPHA_VERSION_NUMBER + 1))
@@ -122,7 +122,7 @@ jobs:
 
       - name: Update ALPHA_VERSION_NUMBER in repository variable
         env:
-          GH_TOKEN: ${{ steps.generate_token.outputs.token }}
+          GH_TOKEN: ${{ steps.app-token.outputs.token }}
         run: |
           gh variable set ALPHA_VERSION_NUMBER -b "${{ steps.bump_version.outputs.NEW_ALPHA_VERSION_NUMBER }}"
 
