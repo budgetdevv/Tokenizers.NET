@@ -349,7 +349,7 @@ namespace Tokenizers.NET
 
             var tokenizerHandle = TokenizerHandle;
             
-            var outputLengthNative = (nuint) outputs.Length;
+            var outputLength = (nuint) outputs.Length;
             
             ref var outputStart = ref MemoryMarshal.GetReference(outputs);
 
@@ -360,7 +360,7 @@ namespace Tokenizers.NET
                 TokenizerNativeMethods.TokenizerEncodeBatch(
                     tokenizerPtr: tokenizerHandle,
                     textNativeBuffers: readonlyU8Strings,
-                    outputNativeBuffer: new(ref outputStart, outputLengthNative),
+                    outputNativeBuffer: new(ref outputStart, outputLength),
                     addSpecialTokens,
                     truncate
                 );
@@ -373,7 +373,7 @@ namespace Tokenizers.NET
                     TokenizerNativeMethods.TokenizerEncodeBatch(
                         tokenizerPtr: tokenizerHandle,
                         textNativeBuffers: readonlyU8Strings,
-                        outputNativeBuffer: new(outputsPtr, outputLengthNative),
+                        outputNativeBuffer: new(outputsPtr, outputLength),
                         addSpecialTokens,
                         truncate
                     );
