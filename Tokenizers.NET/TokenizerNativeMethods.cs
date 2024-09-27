@@ -32,6 +32,7 @@ namespace Tokenizers.NET
             }
         }
         
+        [SuppressGCTransition]
         [DllImport(DLL_NAME, EntryPoint = "tokenizer_encode", CallingConvention = CallingConvention.Cdecl, ExactSpelling = true)]
         private static extern TokenizeOutput TokenizerEncode(
             nint tokenizerPtr,
@@ -39,6 +40,7 @@ namespace Tokenizers.NET
             [MarshalAs(UnmanagedType.U1)] bool addSpecialTokens
         );
         
+        [SuppressGCTransition]
         [DllImport(DLL_NAME, EntryPoint = "tokenizer_encode_non_truncating", CallingConvention = CallingConvention.Cdecl, ExactSpelling = true)]
         private static extern TokenizeOutput TokenizerEncodeNonTruncating(
             nint tokenizerPtr,
@@ -65,6 +67,7 @@ namespace Tokenizers.NET
             }
         }
         
+        [SuppressGCTransition]
         [DllImport(DLL_NAME, EntryPoint = "tokenizer_encode_batch", CallingConvention = CallingConvention.Cdecl, ExactSpelling = true)]
         private static extern void TokenizerEncodeBatch(
             nint tokenizerPtr, 
@@ -73,6 +76,7 @@ namespace Tokenizers.NET
             [MarshalAs(UnmanagedType.U1)] bool addSpecialTokens
         );
         
+        [SuppressGCTransition]
         [DllImport(DLL_NAME, EntryPoint = "tokenizer_encode_batch_non_truncating", CallingConvention = CallingConvention.Cdecl, ExactSpelling = true)]
         private static extern void TokenizerEncodeBatchNonTruncating(
             nint tokenizerPtr, 
@@ -98,15 +102,19 @@ namespace Tokenizers.NET
             }
         }
         
+        [SuppressGCTransition]
         [DllImport(DLL_NAME, EntryPoint = "tokenizer_decode", CallingConvention = CallingConvention.Cdecl, ExactSpelling = true)]
         private static extern DecodeOutput TokenizerDecode(nint tokenizerPtr, ReadOnlyNativeBuffer<uint> idBuffer);
 
+        [SuppressGCTransition]
         [DllImport(DLL_NAME, EntryPoint = "tokenizer_decode_skip_special_tokens", CallingConvention = CallingConvention.Cdecl, ExactSpelling = true)]
         private static extern DecodeOutput TokenizerDecodeSkipSpecialTokens(nint tokenizerPtr, ReadOnlyNativeBuffer<uint> idBuffer);
 
+        [SuppressGCTransition]
         [DllImport(DLL_NAME, EntryPoint = "free_with_handle", CallingConvention = CallingConvention.Cdecl, ExactSpelling = true)]
         public static extern void FreeWithHandle(nint handle);
         
+        [SuppressGCTransition]
         [DllImport(DLL_NAME, EntryPoint = "free_with_multiple_handles", CallingConvention = CallingConvention.Cdecl, ExactSpelling = true)]
         public static extern void FreeWithMultipleHandles(ReadOnlyNativeBuffer<nint> handles);
     }
