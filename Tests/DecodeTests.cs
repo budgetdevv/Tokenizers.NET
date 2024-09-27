@@ -1,15 +1,13 @@
 using Allure.NUnit;
 using FluentAssertions;
-using Sample;
 using Tokenizers.NET;
-using Tokenizers.NET.Collections;
 
 namespace Tests
 {
     [AllureNUnit]
     public sealed class DecodeTests
     {
-        private Tokenizer<Configs.FlorenceConfig> FlorenceTokenizer;
+        private Tokenizer<Configs.FlorenceTokenizer> FlorenceTokenizer;
         
         // What if Rust code doesn't change?
         [SetUp]

@@ -9,7 +9,7 @@ namespace Tests
     [AllureNUnit]
     public sealed class EncodeTests
     {
-        private Tokenizer<Configs.FlorenceConfig> FlorenceTokenizer;
+        private Tokenizer<Configs.FlorenceTokenizer> FlorenceTokenizer;
         
         private Tokenizer<Configs.OverflowingTokenizer> OverflowingTokenizer;
         
@@ -61,7 +61,7 @@ namespace Tests
 
             const nuint MIN_OVERFLOWING_SEGMENTS = 3;
 
-            var expectedMaxInputLength = (nuint) Configs.OverflowingTokenizer.ExpectedMaxInputLength;
+            var expectedMaxInputLength = (nuint) tokenizer.Config.ExpectedMaxInputLength;
             
             var length = expectedMaxInputLength;
 
@@ -157,7 +157,7 @@ namespace Tests
         {
             ref var tokenizer = ref OverflowingTokenizer;
             
-            var expectedMaxInputLength = (nuint) Configs.OverflowingTokenizer.ExpectedMaxInputLength;
+            var expectedMaxInputLength = (nuint) tokenizer.Config.ExpectedMaxInputLength;
             
             var length = expectedMaxInputLength;
 

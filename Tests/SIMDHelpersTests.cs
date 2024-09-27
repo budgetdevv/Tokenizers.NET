@@ -8,7 +8,7 @@ namespace Tests
     [AllureNUnit]
     public sealed class SIMDHelpersTests
     {
-        private Tokenizer<Configs.FlorenceConfig> FlorenceTokenizer;
+        private Tokenizer<Configs.FlorenceTokenizer> FlorenceTokenizer;
         
         // What if Rust code doesn't change?
         [SetUp]

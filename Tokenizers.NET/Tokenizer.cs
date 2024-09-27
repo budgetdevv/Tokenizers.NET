@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Linq;
 using System.Runtime.CompilerServices;
@@ -11,31 +12,136 @@ using Tokenizers.NET.Helpers;
 
 namespace Tokenizers.NET
 {
-    public enum ExceedExpectedMaxBatchesBehavior
+    public static unsafe class Tokenizer
     {
-        AllocateBuffer,
-        AllocatePooledBuffer,
-        // Discard, // TODO: Implement this
+        public enum ExceedExpectedMaxBatchesBehavior
+        {
+            AllocateBuffer,
+            AllocatePooledBuffer,
+            // Discard, // TODO: Implement this
+        }
+        
+        public interface IConfig
+        {
+            public static abstract BuiltConfig BuiltConfig { get; }
+        }
+
+        public struct ConfigBuilder
+        {
+            internal uint ExpectedMaxInputLength, ExpectedMaxBatches;
+
+            internal ExceedExpectedMaxBatchesBehavior ExceedExpectedMaxBatchesBehavior;
+
+            internal string? TokenizerJsonPath;
+
+            internal byte[]? RawTokenizerData;
+
+            public ConfigBuilder()
+            {
+                ExpectedMaxInputLength = 1024;
+
+                ExpectedMaxBatches = 16;
+
+                ExceedExpectedMaxBatchesBehavior = ExceedExpectedMaxBatchesBehavior.AllocateBuffer;
+
+                TokenizerJsonPath = null;
+
+                RawTokenizerData = null;
+            }
+            
+            [UnscopedRef]
+            public ref ConfigBuilder SetExpectedMaxInputLength(uint expectedMaxInputLength)
+            {
+                ExpectedMaxInputLength = expectedMaxInputLength;
+                return ref this;
+            }
+            
+            [UnscopedRef]
+            public ref ConfigBuilder SetExpectedMaxBatches(uint expectedMaxBatches)
+            {
+                ExpectedMaxBatches = expectedMaxBatches;
+                return ref this;
+            }
+            
+            [UnscopedRef]
+            public ref ConfigBuilder SetExceedExpectedMaxBatchesBehavior(ExceedExpectedMaxBatchesBehavior exceedExpectedMaxBatchesBehavior)
+            {
+                ExceedExpectedMaxBatchesBehavior = exceedExpectedMaxBatchesBehavior;
+                return ref this;
+            }
+            
+            [UnscopedRef]
+            public ref ConfigBuilder SetTokenizerJsonPath(string tokenizerJsonPath)
+            {
+                TokenizerJsonPath = tokenizerJsonPath;
+                return ref this;
+            }
+            
+            [UnscopedRef]
+            public ref ConfigBuilder SetRawTokenizerData(byte[] rawTokenizerData)
+            {
+                RawTokenizerData = rawTokenizerData;
+                return ref this;
+            }
+            
+            public BuiltConfig Build()
+            {
+                return new(this);
+            }
+        }
+
+        public readonly struct BuiltConfig
+        {
+            public readonly uint ExpectedMaxInputLength, ExpectedMaxBatches;
+        
+            public readonly ExceedExpectedMaxBatchesBehavior ExceedExpectedMaxBatchesBehavior;
+        
+            public readonly string? TokenizerJsonPath;
+
+            public readonly NativeMemory<byte> RawTokenizerData;
+
+            public readonly bool Truncates;
+
+            [Obsolete("Use constructor with parameters.", error: true)]
+            public BuiltConfig()
+            {
+                throw new NotSupportedException("Use constructor with parameters.");
+            }
+            
+            internal BuiltConfig(ConfigBuilder builder)
+            {
+                ExpectedMaxInputLength = builder.ExpectedMaxInputLength;
+                ExpectedMaxBatches = builder.ExpectedMaxBatches;
+                ExceedExpectedMaxBatchesBehavior = builder.ExceedExpectedMaxBatchesBehavior;
+                
+                var tokenizerJsonPath = TokenizerJsonPath = builder.TokenizerJsonPath;
+                
+                var rawTokenizerDataArr = builder.RawTokenizerData;
+
+                // Let it throw if both are null
+                rawTokenizerDataArr ??= File.ReadAllBytes(tokenizerJsonPath!);
+
+                // TODO: Consider mmap instead of heap allocation.
+                
+                var rawTokenizerData = RawTokenizerData = new((nuint) rawTokenizerDataArr.Length);
+
+                var rawTokenizerDataSpan = rawTokenizerData.Buffer.AsSpan();
+                
+                rawTokenizerDataArr.CopyTo(rawTokenizerDataSpan);
+                
+                var tokenizerData = JsonSerializer.Deserialize<TokenizerData>(rawTokenizerDataSpan);
+            
+                Truncates = tokenizerData.Truncation != null;
+            }
+        }
     }
     
-    public interface ITokenizerConfig
-    {
-        public static abstract uint ExpectedMaxInputLength { get; }
-        
-        public static abstract uint ExpectedMaxBatches { get; }
-        
-        public static virtual ExceedExpectedMaxBatchesBehavior ExceedExpectedMaxBatchesBehavior
-            => ExceedExpectedMaxBatchesBehavior.AllocatePooledBuffer;
-        
-        public static abstract string TokenizerJsonPath { get; }
-    }
-
     public unsafe struct Tokenizer<ConfigT>: IDisposable
-        where ConfigT: struct, ITokenizerConfig
+        where ConfigT: struct, Tokenizer.IConfig
     {
         private struct TempFixedAllocator: IDisposable
         {
-            public static readonly int BUFFER_SIZE = Encoding.UTF8.GetMaxByteCount(ConfigT.ExpectedMaxInputLength.ToSignedUnchecked());
+            public static readonly int BUFFER_SIZE = Encoding.UTF8.GetMaxByteCount(ConfigT.BuiltConfig.ExpectedMaxInputLength.ToSignedUnchecked());
             
             private byte[][] Buffers;
 
@@ -43,7 +149,9 @@ namespace Tokenizers.NET
 
             public TempFixedAllocator()
             {
-                var maxExpectedBatches = ConfigT.ExpectedMaxBatches;
+                var config = ConfigT.BuiltConfig;
+                
+                var maxExpectedBatches = config.ExpectedMaxBatches;
                 
                 var buffers = Buffers = AllocationHelpers.AllocatePinnedUninitialized<byte[]>(maxExpectedBatches);
                 Count = maxExpectedBatches.ToSignedUnchecked();
@@ -107,10 +215,12 @@ namespace Tokenizers.NET
             private byte[] Allocate(ref Handle handle)
             {
                 var count = handle.CurrentCount;
+                
+                var config = ConfigT.BuiltConfig;
 
                 // This check is free if ConfigT.ExceedExpectedMaxBatchesBehavior == ExceedExpectedMaxBatchesBehavior.AllocateBuffer,
                 // which in turn eliminates AllocateSlow() call.
-                if (count == 0 || ConfigT.ExceedExpectedMaxBatchesBehavior == ExceedExpectedMaxBatchesBehavior.AllocateBuffer)
+                if (count == 0 || config.ExceedExpectedMaxBatchesBehavior == Tokenizer.ExceedExpectedMaxBatchesBehavior.AllocateBuffer)
                 {
                     var readIndex = handle.CurrentCount = count - 1;
                     
@@ -159,40 +269,24 @@ namespace Tokenizers.NET
                 Buffers = null;
             }
         }
-
-        private static readonly bool TRUNCATE;
-        
-        private static readonly byte[] TOKENIZER_DATA;
-        
-        static Tokenizer()
-        {
-            var bytes = File.ReadAllBytes(ConfigT.TokenizerJsonPath);
-            
-            var tokenizerDataBytes = TOKENIZER_DATA = AllocationHelpers
-                .AllocatePinnedUninitialized<byte>(bytes.Length);
-            
-            bytes.AsSpan().CopyTo(tokenizerDataBytes);
-
-            var tokenizerData = JsonSerializer.Deserialize<TokenizerData>(tokenizerDataBytes);
-            
-            TRUNCATE = tokenizerData.Truncation != null;
-        }
         
         private TempFixedAllocator Allocator;
         
         private readonly nint TokenizerHandle;
         
-        public bool Truncate => TRUNCATE;
+        public Tokenizer.BuiltConfig Config => ConfigT.BuiltConfig;
+        
+        public bool Truncate => ConfigT.BuiltConfig.Truncates;
         
         public Tokenizer()
         {
-            var tokenizerData = TOKENIZER_DATA;
+            var rawTokenizerData = Config.RawTokenizerData.Buffer;
             
             Allocator = new();
-            
+
             TokenizerHandle = TokenizerNativeMethods.AllocateTokenizer(
-                tokenizerData.PinnedArrayToPointer(), 
-                (nuint) tokenizerData.Length
+                rawTokenizerData.Ptr,
+                rawTokenizerData.Length
             );
         }
         
@@ -205,7 +299,7 @@ namespace Tokenizers.NET
 
             Unsafe.SkipInit(out NativeMemory<byte> nativeMemory);
             
-            var allocateNative = inputLength > ConfigT.ExpectedMaxInputLength;
+            var allocateNative = inputLength > Config.ExpectedMaxInputLength;
             
             if (!allocateNative)
             {
@@ -241,7 +335,7 @@ namespace Tokenizers.NET
                 TokenizerHandle, 
                 u8String,
                 addSpecialTokens,
-                TRUNCATE
+                Truncate
             );
             
             if (allocateNative)
@@ -298,6 +392,8 @@ namespace Tokenizers.NET
             bool skipLengthCheck,
             bool addSpecialTokens)
         {
+            var config = Config;
+            
             var numInputs = inputs.Length;
             
             if (!skipLengthCheck && numInputs != outputs.Length)
@@ -324,8 +420,8 @@ namespace Tokenizers.NET
                 var inputLength = input.Length;
                     
                 var allocateNative = 
-                    inputLength > ConfigT.ExpectedMaxInputLength || 
-                    (ConfigT.ExceedExpectedMaxBatchesBehavior == ExceedExpectedMaxBatchesBehavior.AllocateBuffer && allocator.CurrentCount == 0);
+                    inputLength > config.ExpectedMaxInputLength || 
+                    (config.ExceedExpectedMaxBatchesBehavior == Tokenizer.ExceedExpectedMaxBatchesBehavior.AllocateBuffer && allocator.CurrentCount == 0);
                     
                 if (!allocateNative)
                 {
@@ -354,7 +450,7 @@ namespace Tokenizers.NET
             
             ref var outputStart = ref MemoryMarshal.GetReference(outputs);
 
-            var truncate = TRUNCATE;
+            var truncate = Truncate;
             
             if (outputsPrePinned)
             {

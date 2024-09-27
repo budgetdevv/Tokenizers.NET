@@ -5,13 +5,17 @@ namespace Sample
 {
     internal static class Program
     {
-        private struct Config: ITokenizerConfig
+        private struct Config: Tokenizer.IConfig
         {
-            public static uint ExpectedMaxInputLength => 1024;
-            
-            public static uint ExpectedMaxBatches => 5;
-            
-            public static string TokenizerJsonPath => "FlorenceTokenizer.json";
+            private static readonly Tokenizer.BuiltConfig BUILT_CONFIG =
+                new Tokenizer.ConfigBuilder()
+                .SetExpectedMaxBatches(1024)
+                .SetExpectedMaxInputLength(16)
+                .SetExceedExpectedMaxBatchesBehavior(Tokenizer.ExceedExpectedMaxBatchesBehavior.AllocateBuffer)
+                .SetTokenizerJsonPath("FlorenceTokenizer.json")
+                .Build();
+
+            public static Tokenizer.BuiltConfig BuiltConfig => BUILT_CONFIG;
         }
 
         private static string GenerateString(char val, int length)

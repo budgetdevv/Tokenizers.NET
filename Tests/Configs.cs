@@ -4,22 +4,30 @@ namespace Tests
 {
     internal static class Configs
     {
-        public struct FlorenceConfig: ITokenizerConfig
+        public struct FlorenceTokenizer: Tokenizer.IConfig
         {
-            public static uint ExpectedMaxInputLength => 1024;
+            private static readonly Tokenizer.BuiltConfig BUILT_CONFIG =
+                new Tokenizer.ConfigBuilder()
+                    .SetExpectedMaxBatches(1024)
+                    .SetExpectedMaxInputLength(16)
+                    .SetExceedExpectedMaxBatchesBehavior(Tokenizer.ExceedExpectedMaxBatchesBehavior.AllocateBuffer)
+                    .SetTokenizerJsonPath("FlorenceTokenizer.json")
+                    .Build();
 
-            public static uint ExpectedMaxBatches => 2;
-            
-            public static string TokenizerJsonPath => "FlorenceTokenizer.json";
+            public static Tokenizer.BuiltConfig BuiltConfig => BUILT_CONFIG;
         }
         
-        public struct OverflowingTokenizer: ITokenizerConfig
+        public struct OverflowingTokenizer: Tokenizer.IConfig
         {
-            public static uint ExpectedMaxInputLength => 384;
+            private static readonly Tokenizer.BuiltConfig BUILT_CONFIG =
+                new Tokenizer.ConfigBuilder()
+                    .SetExpectedMaxBatches(16)
+                    .SetExpectedMaxInputLength(384)
+                    .SetExceedExpectedMaxBatchesBehavior(Tokenizer.ExceedExpectedMaxBatchesBehavior.AllocateBuffer)
+                    .SetTokenizerJsonPath("OverflowingTokenizer.json")
+                    .Build();
 
-            public static uint ExpectedMaxBatches => 2;
-            
-            public static string TokenizerJsonPath => "OverflowingTokenizer.json";
+            public static Tokenizer.BuiltConfig BuiltConfig => BUILT_CONFIG;
         }
     }
 }
