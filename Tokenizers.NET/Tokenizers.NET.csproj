@@ -10,7 +10,7 @@
         <Description>High-performance .NET wrapper of the Rust Tokenizers library</Description>
         <PackageProjectUrl>https://github.com/budgetdevv/Tokenizers.NET</PackageProjectUrl>
         <RepositoryUrl>https://github.com/budgetdevv/Tokenizers.NET</RepositoryUrl>
-        <VersionPrefix>1.0.9</VersionPrefix>
+        <VersionPrefix>1.0.10</VersionPrefix>
         <VersionSuffix>$(AlphaVersion)</VersionSuffix>
     </PropertyGroup>
 

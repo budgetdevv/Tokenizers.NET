@@ -1,6 +1,6 @@
 # https://medium.com/@m.b1lal/how-to-use-github-actions-to-run-nunit-tests-and-publish-allure-reports-to-github-pages-224866d3ea2e
 
-name: NUnit Tests and Deploy Allure Reports
+name: Test, Publish NuGet and Generate Allure Report
 
 on:
   push:
@@ -91,32 +91,47 @@ jobs:
           PUBLISH_DIR: allure-report
           
           
+
   publish-nuget:
     needs: test
-
     runs-on: macos-latest
-
     steps:
       - name: Checkout code
         uses: actions/checkout@v4.1.1
-      
+
       - name: Get short commit SHA
         id: vars
-        run: echo "COMMIT_SHA=$(git rev-parse --short HEAD)" >> $GITHUB_ENV
+        run: echo "COMMIT_SHA=$(git rev-parse --short HEAD)" >> $GITHUB_OUTPUT
+
+      - name: Get and increment alpha version number
+        id: bump_version
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          CURRENT_ALPHA_VERSION_NUMBER=$(gh variable get ALPHA_VERSION_NUMBER)
+          NEW_ALPHA_VERSION_NUMBER=$((CURRENT_ALPHA_VERSION_NUMBER + 1))
+          echo "NEW_ALPHA_VERSION_NUMBER=$NEW_ALPHA_VERSION_NUMBER" >> $GITHUB_OUTPUT
+
+      - name: Update ALPHA_VERSION_NUMBER in repository variable
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh variable set ALPHA_VERSION_NUMBER -b "${{ steps.bump_version.outputs.NEW_ALPHA_VERSION_NUMBER }}"
 
       - name: Set Alpha Version
+        id: set_version
         run: |
-          ALPHA_VERSION=alpha-${COMMIT_SHA}
-          echo "ALPHA_VERSION=$ALPHA_VERSION" >> $GITHUB_ENV
-          
+          ALPHA_VERSION=alpha-${{ steps.bump_version.outputs.NEW_ALPHA_VERSION_NUMBER }}-${{ steps.vars.outputs.COMMIT_SHA }}
+          echo "ALPHA_VERSION=$ALPHA_VERSION" >> $GITHUB_OUTPUT
+
       - name: Restore dependencies
         working-directory: Tokenizers.NET
         run: dotnet restore
-          
+
       - name: Build NuGet package
         working-directory: Tokenizers.NET
-        run: dotnet pack -c Release -v:m /p:AlphaVersion=${ALPHA_VERSION} /p:DownloadNativeFiles=true
-      
+        run: dotnet pack -c Release -v:m --no-restore /p:AlphaVersion=${{ steps.set_version.outputs.ALPHA_VERSION }} /p:DownloadNativeFiles=true
+
       - name: Publish NuGet package
         working-directory: Tokenizers.NET
         run: dotnet nuget push -s https://api.nuget.org/v3/index.json -k ${{ secrets.NUGET_API_KEY }} --skip-duplicate bin/Release/*.nupkg
