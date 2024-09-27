@@ -306,52 +306,56 @@ namespace Tokenizers.NET
 
             const int MAX_STACK_ALLOC_NUM_INPUTS = 32;
 
+            // Sadly we can't use indices...u8Strings contain sliced buffers, not the full allocation
+            
+            // using var nativeAllocationsIndices = new StackList<uint>(
+            //     stackalloc uint[MAX_STACK_ALLOC_NUM_INPUTS]
+            // );
+            
             using var nativeAllocations = new StackList<NativeMemory<byte>>(
                 stackalloc NativeMemory<byte>[MAX_STACK_ALLOC_NUM_INPUTS]
             );
             
-            var u8Strings = new NativeBuffer<ReadOnlyNativeBuffer<byte>>(
+            using var u8Strings = new StackList<ReadOnlyNativeBuffer<byte>>(
                 stackalloc ReadOnlyNativeBuffer<byte>[numInputs]
             );
             
             using var allocator = Allocator.GetHandle();
-
-            if (true) // Just to make sure currentU8String is not accessible outside of this scope
-            {
-                var currentU8String = u8Strings.Ptr;
             
-                foreach (var input in inputs)
+            foreach (var input in inputs)
+            {
+                Span<byte> allocation;
+
+                var inputLength = input.Length;
+                    
+                var allocateNative = 
+                    inputLength > ConfigT.ExpectedMaxInputLength || 
+                    (ConfigT.ExceedExpectedMaxBatchesBehavior == ExceedExpectedMaxBatchesBehavior.AllocateBuffer && allocator.CurrentCount == 0);
+                    
+                if (!allocateNative)
                 {
-                    Span<byte> allocation;
-
-                    var inputLength = input.Length;
-                    
-                    var allocateNative = 
-                        inputLength > ConfigT.ExpectedMaxInputLength || 
-                        (ConfigT.ExceedExpectedMaxBatchesBehavior == ExceedExpectedMaxBatchesBehavior.AllocateBuffer && allocator.CurrentCount == 0);
-                    
-                    if (allocateNative)
-                    {
-                        allocation = allocator.Allocate();
-                    }
-
-                    else
-                    {
-                        var nativeMemory = new NativeMemory<byte>((nuint) Encoding.UTF8.GetMaxByteCount(inputLength));
-                        nativeAllocations.Add(nativeMemory);
-                        
-                        allocation = nativeMemory.Buffer.AsSpan();
-                    }
-
-                    var bytesWritten = Encoding.UTF8.GetBytes(input, allocation);
-                
-                    *currentU8String = new(ref MemoryMarshal.GetReference(allocation), (nuint) bytesWritten);
-                    
-                    currentU8String++;
+                    allocation = allocator.Allocate();
                 }
+
+                else
+                {
+                    var nativeMemory = new NativeMemory<byte>((nuint) Encoding.UTF8.GetMaxByteCount(inputLength));
+
+                    // var currentIndex = (uint) u8Strings.Count;
+                    //
+                    // nativeAllocations.Add(currentIndex);
+                    
+                    nativeAllocations.Add(nativeMemory);
+                        
+                    allocation = nativeMemory.Buffer.AsSpan();
+                }
+
+                var bytesWritten = Encoding.UTF8.GetBytes(input, allocation);
+                
+                u8Strings.Add(new(ref MemoryMarshal.GetReference(allocation), (nuint) bytesWritten));
             }
             
-            var readonlyU8Strings = u8Strings.AsReadOnly();
+            var readonlyU8Strings = u8Strings.AsSlicedNativeBuffer().AsReadOnly();
 
             var tokenizerHandle = TokenizerHandle;
             
@@ -385,7 +389,14 @@ namespace Tokenizers.NET
                     );
                 }
             }
-            
+
+            // var readonlyU8StringsPtr = readonlyU8Strings.Ptr;
+            //
+            // foreach (var nativeMemoryIndex in nativeAllocations.AsSpan())
+            // {
+            //     readonlyU8StringsPtr[nativeMemoryIndex]
+            // }
+
             foreach (var nativeMemory in nativeAllocations.AsSpan())
             {
                 nativeMemory.Dispose();
