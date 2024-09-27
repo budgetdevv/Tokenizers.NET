@@ -192,7 +192,8 @@ namespace Tokenizers.NET
             
             TokenizerHandle = TokenizerNativeMethods.AllocateTokenizer(
                 tokenizerData.PinnedArrayToPointer(), 
-                (nuint) tokenizerData.Length);
+                (nuint) tokenizerData.Length
+            );
         }
         
         [SkipLocalsInit]
