@@ -18,20 +18,27 @@ namespace Tokenizers.NET.Collections
 
         private bool IsInitialMemory;
 
+        [Obsolete("Use constructor with parameters.", error: true)]
         public StackList()
         {
-            throw new NotSupportedException();
+            throw new NotSupportedException("Use constructor with parameters.");
         }
         
         // Caller is responsible for freeing underlying memory of pinnedSpan
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public StackList(Span<T> pinnedSpan)
-        {
-            Ptr = (T*) Unsafe.AsPointer(ref MemoryMarshal.GetReference(pinnedSpan));
+        public StackList(Span<T> pinnedSpan): this(
+            (T*) Unsafe.AsPointer(ref MemoryMarshal.GetReference(pinnedSpan)),
+            pinnedSpan.Length) { }
 
+        // Caller is responsible for freeing underlying memory
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public StackList(T* ptr, int length)
+        {
+            Ptr = ptr;
+            
             Count = 0;
             
-            Capacity = pinnedSpan.Length;
+            Capacity = length;
             
             IsInitialMemory = true;
         }
