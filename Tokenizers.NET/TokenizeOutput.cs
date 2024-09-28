@@ -1,4 +1,5 @@
 using System;
+using System.Diagnostics;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using Tokenizers.NET.Collections;
@@ -334,18 +335,26 @@ namespace Tokenizers.NET
             var overflowingTokensHandle = OverflowingTokensFreeHandle;
 
             var freeOverflowingTokens = overflowingTokensHandle != nint.Zero;
+
+            // Workaround for issue described in https://github.com/dotnet/runtime/pull/108356,
+            // which prevents this method from being inlined, even with AggressiveInlining
+            
+            // Also see: https://canary.discord.com/channels/143867839282020352/312132327348240384/1289643442388860998
+            
+            // It is fine to over-allocate a bit anyway
+            const int NUM_HANDLES = 2, PESSIMIZED_NINT_SIZE = 8;
+            
+            var bytePtr = stackalloc byte[NUM_HANDLES * PESSIMIZED_NINT_SIZE];
             
             #if DEBUG
-            TokenizerNativeMethods.FreeWithHandle(originalOutputFreeHandle);
+            // Ensure it is aligned ( I believe stackallocs are aligned to 16 bytes )
+            // See: https://canary.discord.com/channels/143867839282020352/312132327348240384/1089221542883377233
+            // Being aligned to 8 would also mean being aligned to 4
+            var addr = (nint) bytePtr;
+            Debug.Assert(addr % PESSIMIZED_NINT_SIZE == 0);
+            #endif
             
-            if (freeOverflowingTokens)
-            {
-                TokenizerNativeMethods.FreeWithHandle(overflowingTokensHandle);
-            }
-            
-            #else
-            // It is fine to over-allocate
-            var ptr = stackalloc nint[2];
+            var ptr = (nint*) bytePtr;
             
             *ptr = originalOutputFreeHandle;
             *(ptr + 1) = overflowingTokensHandle;
@@ -354,7 +363,6 @@ namespace Tokenizers.NET
                 ptr, 
                 length: freeOverflowingTokens ? (nuint) 2 : 1)
             );
-            #endif
         }
     }
 }
