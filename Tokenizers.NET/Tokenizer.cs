@@ -427,15 +427,15 @@ namespace Tokenizers.NET
             Debug.Assert(((nint) u8StringsPtr) % sizeof(NativeMemory<byte>) == 0);
             #endif
             
-            using var nativeAllocations = new StackList<NativeMemory<byte>>(
+            var nativeAllocations = new StackList<NativeMemory<byte>>(
                 (NativeMemory<byte>*) nativeAllocationsPtr, MAX_STACK_ALLOC_NUM_INPUTS
             );
             
-            using var u8Strings = new StackList<ReadOnlyNativeBuffer<byte>>(
+            var u8Strings = new StackList<ReadOnlyNativeBuffer<byte>>(
                 (ReadOnlyNativeBuffer<byte>*) u8StringsPtr, MAX_STACK_ALLOC_NUM_INPUTS
             );
             
-            using var allocator = Allocator.GetHandle();
+            var allocator = Allocator.GetHandle();
             
             foreach (var input in inputs)
             {
@@ -505,6 +505,10 @@ namespace Tokenizers.NET
             {
                 nativeMemory.Dispose();
             }
+            
+            nativeAllocations.Dispose();
+            u8Strings.Dispose();
+            allocator.Dispose();
         }
         
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
