@@ -38,21 +38,22 @@ namespace Codegen
             
             var outputs = new NativeMemory<TokenizeOutput>((nuint) inputs.Length);
             
-            for (int i = 0; i < 1000; i++)
+            for (int outerIterations = 0; outerIterations < 3; outerIterations++)
             {
-                TokenizeBatch_DISASM(tokenizer, inputs, outputs);
+                for (int innerIterations = 0; innerIterations < 1000; innerIterations++)
+                {
+                    Disasm(tokenizer, inputs, outputs);
+                }
             
-                DisposeTokenizeBatchOutput_DISASM(*outputs.Buffer.Ptr);
+                Thread.Sleep(500);
             }
+        }
+
+        private static void Disasm(Tokenizer<TokenizerConfig> tokenizer, ReadOnlySpan<string> inputs, NativeMemory<TokenizeOutput> outputs)
+        {
+            TokenizeBatch_DISASM(tokenizer, inputs, outputs);
             
-            Thread.Sleep(500);
-            
-            for (int i = 0; i < 1000; i++)
-            {
-                TokenizeBatch_DISASM(tokenizer, inputs, outputs);
-            
-                DisposeTokenizeBatchOutput_DISASM(*outputs.Buffer.Ptr);
-            }
+            DisposeTokenizeBatchOutput_DISASM(*outputs.Buffer.Ptr);
         }
         
         private const MethodImplOptions DISASM_METHOD_IMPL_OPTIONS = MethodImplOptions.NoInlining; // | MethodImplOptions.AggressiveOptimization;
