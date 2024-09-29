@@ -14,11 +14,6 @@
       <ProjectReference Include="..\Tokenizers.NET\Tokenizers.NET.csproj" />
     </ItemGroup>
 
-    <ItemGroup>
-        <Content Include="../SampleTokenizers/FlorenceTokenizer.json" CopyToOutputDirectory="PreserveNewest" />
-        <Content Include="../SampleTokenizers/OverflowingTokenizer.json" CopyToOutputDirectory="PreserveNewest" />
-    </ItemGroup>
-
     <!--    This is only used in development. Since I am the only developer, it will be hardcoded to a dylib file.-->
     <ItemGroup>
         <!-- OSX ARM64 -->
