@@ -382,9 +382,11 @@ namespace Tokenizers.NET
             
             return outputs;
         }
+        
+        const int MAX_STACK_ALLOC_NUM_INPUTS = 32;
 
-        [InlineArray(32)]
-        private struct FixedBuffer32<T> where T: unmanaged
+        [InlineArray(MAX_STACK_ALLOC_NUM_INPUTS)]
+        private struct FixedBuffer<T> where T: unmanaged
         {
             public T First;
 
@@ -430,11 +432,8 @@ namespace Tokenizers.NET
             // How PESSIMIZED_NATIVE_MEMORY_SIZE is calculated:
             // https://sharplab.io/#v2:EYLgxg9gTgpgtADwGwBYA0AXEUCuA7AHwAEAmARgFgAoIgBgAIiyA6AJXwwEsBbGZgYQjcADpwA2MKAGVJAN05gYAZwDc1Ooxbs8XXswCSOyRGEyo8xaurV8SgIYAzGNQDe1eh80BOABRLOAF4wEA4+AHJ2XLIwALIw3NAAngA8wIkYMAB8AJTZalSe3n6BwaERUTAAQjgOTlCp6Vm5+QC+1lQA2lIYuGAYADJ2iRA4GD6Dw6MA0px4ACbMMgCOODA6nHZi2QC66gDM9LB2cxB4Yon0to4w9Eo9OH305ZzRcQlQKQAqmfQg9PoAEU4SmEEHswAkaH+AFEVpE7BCYMlnq94klkt9Mu5PAB3AAWkhun1+lzw3DseDsAHMYHNXNiPEQDkcTmcLiiqjU6hiftVapJ8gzGAcOW8kj5skK3AVCp4MHioBAcfQ8DBlWEIBgpDhhKCoBk5tCEIphFxThL8oU2lQhUynpEXrE0R8fHgcLMMPQJHgqfLJTKPNLZZ5ZHYoPRTeGALz0HyfABU2VFzsSzAAgmIxBAwD5vb68VDXe6dNl/EEQnHmu1gx4+XV6DHVTifJGoXm/ZbPNahR04vKIHN9CIxD4+3iB0PhGIAPKmzinJTpqlU2BKfzRQxiWazKk7W0HJhIe0VMUfHn0ADqUDswjrknCDuid/q33owC5kn9hSDNaIAHZ6AAVTwewnGYSpOAwfg7DuZFH05fkX0yKFk3eL5MkyHx30QvIhW7AN6F7GB+0HYdR2I8dSKnWczRApcV2UdcYE3bcfT3Ai7WACAIDEehYRwTYlAfE8U3PTUCSgL9PB/YNQ3DcTJGfBt6AUqBwI/KBO1ksM3w05Tn0FAjCn/FT5UUjTmAABR6BsY2wuorJsgAyJzTIk59mH6NZ81s3TEM87z5S0+h8OMg4IGiKAoE4OYbi4ni+LhMQhIgYAACsYD6AB+FT0qkwMhWMgDUrS+hgWPR1T3QtzJHoFzEoE5KfFU3CCNCzwiJIycRzHCdhxo+c6LTZdVyYli8B3diwpUyLotisqdHoABxYiAAkYLxQRYolKVCs8EyfA9bIPOszS8OrfaDzII94t4kxJEiaBbOEyrRNfCQHAwFD4Kq89oqpPEMHy+gZNlEyPowZh+MEnx/sB1qrQuxkrpu7i7uEB6MCegBCKMXtRNDzwh76RMJ184aB3ajP2gDsYhqGkqEimEa7JHhUYFB6CBEEwRgHaCNBwpUKSZgADFYD5k6ehZjxrXwrp7j6CYRjGZXplmBZllWdZNnYu0WVOc5SVAm47l6T0OWfHk43jCMeihN0PS9QK8Wyeh8UJehiT+fByUpGk6SoUH9ZgY5DYuBN6FO5TI2CkOw7ZFVi09LyfXlZT2zxVogA
 
-            var nativeAllocationsFixedBuffer = new FixedBuffer32<NativeMemory<byte>>();
-            
-            var u8StringsFixedBuffer = new FixedBuffer32<ReadOnlyNativeBuffer<byte>>();
-
-            const int MAX_STACK_ALLOC_NUM_INPUTS = 32;
+            Unsafe.SkipInit(out FixedBuffer<NativeMemory<byte>> nativeAllocationsFixedBuffer);
+            Unsafe.SkipInit(out FixedBuffer<ReadOnlyNativeBuffer<byte>> u8StringsFixedBuffer);
             
             var nativeAllocations = new StackList<NativeMemory<byte>>(
                 nativeAllocationsFixedBuffer.AsPointerUnsafely(),
