@@ -17,7 +17,6 @@ namespace Tokenizers.NET
         public enum ExceedExpectedMaxBatchesBehavior
         {
             AllocateBuffer,
-            AllocatePooledBuffer,
             // Discard, // TODO: Implement this
         }
         
@@ -136,16 +135,16 @@ namespace Tokenizers.NET
         }
     }
     
-    public unsafe struct Tokenizer<ConfigT>: IDisposable
+    public readonly unsafe struct Tokenizer<ConfigT>: IDisposable
         where ConfigT: struct, Tokenizer.IConfig
     {
-        private struct TempFixedAllocator: IDisposable
+        private readonly struct TempFixedAllocator
         {
             public static readonly int BUFFER_SIZE = Encoding.UTF8.GetMaxByteCount(ConfigT.BuiltConfig.ExpectedMaxInputLength.ToSignedUnchecked());
             
-            private byte[][] Buffers;
+            private readonly byte[][] Buffers;
 
-            private int Count;
+            private readonly int Count;
 
             public TempFixedAllocator()
             {
@@ -169,109 +168,77 @@ namespace Tokenizers.NET
             }
 
             public ref struct Handle
-                #if NET9_0_OR_GREATER
-                : IDisposable
-                #endif
             {
-                private readonly ref TempFixedAllocator Allocator;
+                private readonly ref readonly TempFixedAllocator Allocator;
 
                 internal int CurrentCount;
                 
                 [MethodImpl(MethodImplOptions.AggressiveInlining)]
-                internal Handle(ref TempFixedAllocator allocator)
+                internal Handle(ref readonly TempFixedAllocator allocator)
                 {
                     Allocator = ref allocator;
                     CurrentCount = allocator.Count;
                 }
                 
                 [MethodImpl(MethodImplOptions.AggressiveInlining)]
-                public byte[] Allocate()
+                public bool TryAllocate(out byte[]? buffer)
                 {
-                    return Allocator.Allocate(ref this);
+                    return Allocator.TryAllocate(ref this, out buffer);
                 }
-                
-                [MethodImpl(MethodImplOptions.AggressiveInlining)]
-                public void Dispose()
-                {
-                    #if DEBUG
-                    ref var allocator = ref Allocator;
-                    
-                    var buffers = allocator.Buffers;
-
-                    var count = allocator.Count;
-                
-                    Debug.Assert(buffers.AsSpan(0, count).ToArray().All(buffer => buffer != null));
-                    Debug.Assert(buffers.AsSpan(count).ToArray().All(buffer => buffer == null));
-                    #endif
-                }   
             }
             
+            [UnscopedRef]
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             public Handle GetHandle()
             {
-                return new(ref this);
+                return new(in this);
             }
             
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            private byte[] Allocate(ref Handle handle)
+            private bool TryAllocate(ref Handle handle, out byte[]? buffer)
             {
                 var count = handle.CurrentCount;
                 
-                var config = ConfigT.BuiltConfig;
+                var success = count != 0;
 
-                // This check is free if ConfigT.ExceedExpectedMaxBatchesBehavior == ExceedExpectedMaxBatchesBehavior.AllocateBuffer,
-                // which in turn eliminates AllocateSlow() call.
-                if (count == 0 || config.ExceedExpectedMaxBatchesBehavior == Tokenizer.ExceedExpectedMaxBatchesBehavior.AllocateBuffer)
+                buffer = null;
+                
+                if (success)
                 {
                     var readIndex = handle.CurrentCount = count - 1;
                     
                     // Don't clear underlying reference, this is to ensure that the buffer will not be collected by GC.
                     // When p/invoking, we pass the pointer to the buffer, so we don't want it to be collected.
                     // It is also more performant to avoid clearing...
-                    return Unsafe.Add(ref MemoryMarshal.GetArrayDataReference(Buffers), readIndex);
+                    buffer = Unsafe.Add(ref MemoryMarshal.GetArrayDataReference(Buffers), readIndex);
                 }
+
+                return success;
+            }
+
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            private byte[] AllocateUnsafely(ref Handle handle)
+            {
+                var readIndex = --handle.CurrentCount;
                 
-                return AllocateSlow();
+                #if DEBUG
+                Debug.Assert(readIndex >= 0);
+                #endif
+                    
+                // Don't clear underlying reference, this is to ensure that the buffer will not be collected by GC.
+                // When p/invoking, we pass the pointer to the buffer, so we don't want it to be collected.
+                // It is also more performant to avoid clearing...
+                return Unsafe.Add(ref MemoryMarshal.GetArrayDataReference(Buffers), readIndex);
             }
             
-            [MethodImpl(MethodImplOptions.NoInlining)]
-            private byte[] AllocateSlow()
-            {
-                var oldCountBeforeScope = Count++;
-                
-                var newAllocation = AllocationHelpers.AllocatePinnedUninitialized<byte>(BUFFER_SIZE);
-
-                var oldBuffers = Buffers;
-                var oldLength = oldBuffers.Length;
-                
-                // This is possible.
-                // Imagine oldCountBeforeScope is length 5, but the underlying buffer is length 8
-                if (oldCountBeforeScope != oldLength)
-                {
-                    oldBuffers[oldCountBeforeScope] = newAllocation;
-                    return newAllocation;
-                }
-
-                var newBuffers = Buffers = AllocationHelpers.AllocatePinnedUninitialized<byte[]>(oldLength * 2);
-                oldBuffers.AsSpan(0, oldLength).CopyTo(newBuffers);
-                
-                newBuffers[oldCountBeforeScope] = newAllocation;
-                return newAllocation;
-            }
-
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             public byte[] GetFirstAllocationUnsafely()
             {
                 return MemoryMarshal.GetArrayDataReference(Buffers);
-            } 
-
-            public void Dispose()
-            {
-                Buffers = null;
             }
         }
         
-        private TempFixedAllocator Allocator;
+        private readonly TempFixedAllocator Allocator;
         
         private readonly nint TokenizerHandle;
         
@@ -417,8 +384,6 @@ namespace Tokenizers.NET
             bool skipLengthCheck,
             bool addSpecialTokens)
         {
-            var config = Config;
-            
             var numInputs = (nuint) inputs.Length;
             
             if (!skipLengthCheck && numInputs != outputs.Length)
@@ -446,16 +411,10 @@ namespace Tokenizers.NET
                 Span<byte> allocation;
 
                 var inputLength = input.Length;
-                    
-                var allocateNative = 
-                    inputLength > config.ExpectedMaxInputLength || 
-                    (config.ExceedExpectedMaxBatchesBehavior == Tokenizer.ExceedExpectedMaxBatchesBehavior.AllocateBuffer && allocator.CurrentCount == 0);
-                    
-                if (!allocateNative)
+                
+                if (inputLength <= Config.ExpectedMaxInputLength && allocator.TryAllocate(out var arr))
                 {
-                    var arr = allocator.Allocate();
-                    
-                    allocation = MemoryMarshal.CreateSpan(ref MemoryMarshal.GetArrayDataReference(arr), arr.Length);
+                    allocation = MemoryMarshal.CreateSpan(ref MemoryMarshal.GetArrayDataReference(arr!), arr!.Length);
                 }
 
                 else
@@ -496,7 +455,6 @@ namespace Tokenizers.NET
             
             nativeAllocations.Dispose();
             u8Strings.Dispose();
-            allocator.Dispose();
         }
         
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -547,8 +505,9 @@ namespace Tokenizers.NET
         
         public void Dispose()
         {
-            Allocator.Dispose();
             TokenizerNativeMethods.FreeTokenizer(TokenizerHandle);
+
+            Unsafe.AsRef(in this) = default;
         }
     }
 }
