@@ -348,21 +348,24 @@ namespace Tokenizers.NET
         
         public void TokenizeBatch(ReadOnlySpan<string> inputs, Span<TokenizeOutput> outputs, bool addSpecialTokens = true)
         {
-            TokenizeBatchInternal(
-                inputs, 
-                outputs, 
-                outputsPrePinned: false,
-                skipLengthCheck: false,
-                addSpecialTokens: addSpecialTokens
-            );
+            ref var first = ref MemoryMarshal.GetReference(outputs);
+            
+            fixed (TokenizeOutput* outputsPtr = &first)
+            {
+                TokenizeBatchInternal(
+                    inputs, 
+                    new(outputsPtr, (nuint) outputs.Length), 
+                    skipLengthCheck: false,
+                    addSpecialTokens: addSpecialTokens
+                );
+            }
         }
         
-        public void TokenizeBatch(ReadOnlySpan<string> inputs, NativeMemory<TokenizeOutput> outputs, bool addSpecialTokens = true)
+        public void TokenizeBatch(ReadOnlySpan<string> inputs, NativeBuffer<TokenizeOutput> outputs, bool addSpecialTokens = true)
         {
             TokenizeBatchInternal(
-                inputs, 
-                outputs.Buffer.AsSpan(), 
-                outputsPrePinned: true,
+                inputs,
+                outputs, 
                 skipLengthCheck: false,
                 addSpecialTokens: addSpecialTokens
             );
@@ -374,8 +377,7 @@ namespace Tokenizers.NET
             
             TokenizeBatchInternal(
                 inputs, 
-                outputs.Buffer.AsSpan(), 
-                outputsPrePinned: true,
+                outputs.Buffer,
                 skipLengthCheck: true,
                 addSpecialTokens: addSpecialTokens
             );
@@ -410,27 +412,18 @@ namespace Tokenizers.NET
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private void TokenizeBatchInternal(
             ReadOnlySpan<string> inputs,
-            Span<TokenizeOutput> outputs,
-            bool outputsPrePinned,
+            NativeBuffer<TokenizeOutput> outputs,
             bool skipLengthCheck,
             bool addSpecialTokens)
         {
             var config = Config;
             
-            var numInputs = inputs.Length;
+            var numInputs = (nuint) inputs.Length;
             
             if (!skipLengthCheck && numInputs != outputs.Length)
             {
                 ThrowHelpers.TokenizeBatchInternalLengthCheckFailed();
             }
-            
-            // Workaround for issue described in https://github.com/dotnet/runtime/pull/108356,
-            // which prevents this method from being inlined, even with AggressiveInlining
-            
-            // See TokenizeOutput.Dispose() for more information
-            
-            // How PESSIMIZED_NATIVE_MEMORY_SIZE is calculated:
-            // https://sharplab.io/#v2:EYLgxg9gTgpgtADwGwBYA0AXEUCuA7AHwAEAmARgFgAoIgBgAIiyA6AJXwwEsBbGZgYQjcADpwA2MKAGVJAN05gYAZwDc1Ooxbs8XXswCSOyRGEyo8xaurV8SgIYAzGNQDe1eh80BOABRLOAF4wEA4+AHJ2XLIwALIw3NAAngA8wIkYMAB8AJTZalSe3n6BwaERUTAAQjgOTlCp6Vm5+QC+1lQA2lIYuGAYADJ2iRA4GD6Dw6MA0px4ACbMMgCOODA6nHZi2QC66gDM9LB2cxB4Yon0to4w9Eo9OH305ZzRcQlQKQAqmfQg9PoAEU4SmEEHswAkaH+AFEVpE7BCYMlnq94klkt9Mu5PAB3AAWkhun1+lzw3DseDsAHMYHNXNiPEQDkcTmcLiiqjU6hiftVapJ8gzGAcOW8kj5skK3AVCp4MHioBAcfQ8DBlWEIBgpDhhKCoBk5tCEIphFxThL8oU2lQhUynpEXrE0R8fHgcLMMPQJHgqfLJTKPNLZZ5ZHYoPRTeGALz0HyfABU2VFzsSzAAgmIxBAwD5vb68VDXe6dNl/EEQnHmu1gx4+XV6DHVTifJGoXm/ZbPNahR04vKIHN9CIxD4+3iB0PhGIAPKmzinJTpqlU2BKfzRQxiWazKk7W0HJhIe0VMUfHn0ADqUDswjrknCDuid/q33owC5kn9hSDNaIAHZ6AAVTwewnGYSpOAwfg7DuZFH05fkX0yKFk3eL5MkyHx30QvIhW7AN6F7GB+0HYdR2I8dSKnWczRApcV2UdcYE3bcfT3Ai7WACAIDEehYRwTYlAfE8U3PTUCSgL9PB/YNQ3DcTJGfBt6AUqBwI/KBO1ksM3w05Tn0FAjCn/FT5UUjTmAABR6BsY2wuorJsgAyJzTIk59mH6NZ81s3TEM87z5S0+h8OMg4IGiKAoE4OYbi4ni+LhMQhIgYAACsYD6AB+FT0qkwMhWMgDUrS+hgWPR1T3QtzJHoFzEoE5KfFU3CCNCzwiJIycRzHCdhxo+c6LTZdVyYli8B3diwpUyLotisqdHoABxYiAAkYLxQRYolKVCs8EyfA9bIPOszS8OrfaDzII94t4kxJEiaBbOEyrRNfCQHAwFD4Kq89oqpPEMHy+gZNlEyPowZh+MEnx/sB1qrQuxkrpu7i7uEB6MCegBCKMXtRNDzwh76RMJ184aB3ajP2gDsYhqGkqEimEa7JHhUYFB6CBEEwRgHaCNBwpUKSZgADFYD5k6ehZjxrXwrp7j6CYRjGZXplmBZllWdZNnYu0WVOc5SVAm47l6T0OWfHk43jCMeihN0PS9QK8Wyeh8UJehiT+fByUpGk6SoUH9ZgY5DYuBN6FO5TI2CkOw7ZFVi09LyfXlZT2zxVogA
 
             Unsafe.SkipInit(out FixedBuffer<NativeMemory<byte>> nativeAllocationsFixedBuffer);
             Unsafe.SkipInit(out FixedBuffer<ReadOnlyNativeBuffer<byte>> u8StringsFixedBuffer);
@@ -480,36 +473,15 @@ namespace Tokenizers.NET
 
             var tokenizerHandle = TokenizerHandle;
             
-            var outputLength = (nuint) outputs.Length;
-            
-            ref var outputStart = ref MemoryMarshal.GetReference(outputs);
-
             var truncate = Truncate;
             
-            if (outputsPrePinned)
-            {
-                TokenizerNativeMethods.TokenizerEncodeBatch(
-                    tokenizerPtr: tokenizerHandle,
-                    textNativeBuffers: readonlyU8Strings,
-                    outputNativeBuffer: new(ref outputStart, outputLength),
-                    addSpecialTokens,
-                    truncate
-                );
-            }
-
-            else
-            {
-                fixed(TokenizeOutput* outputsPtr = &outputStart)
-                {
-                    TokenizerNativeMethods.TokenizerEncodeBatch(
-                        tokenizerPtr: tokenizerHandle,
-                        textNativeBuffers: readonlyU8Strings,
-                        outputNativeBuffer: new(outputsPtr, outputLength),
-                        addSpecialTokens,
-                        truncate
-                    );
-                }
-            }
+            TokenizerNativeMethods.TokenizerEncodeBatch(
+                tokenizerPtr: tokenizerHandle,
+                textNativeBuffers: readonlyU8Strings,
+                outputNativeBuffer: outputs,
+                addSpecialTokens,
+                truncate
+            );
 
             foreach (var nativeMemory in nativeAllocations.AsSpan())
             {

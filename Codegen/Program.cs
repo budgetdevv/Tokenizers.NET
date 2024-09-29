@@ -38,7 +38,7 @@ namespace Codegen
             
             var outputs = new NativeMemory<TokenizeOutput>((nuint) inputs.Length);
             
-            for (int i = 0; i < 100000; i++)
+            for (int i = 0; i < 1000; i++)
             {
                 TokenizeBatch_DISASM(tokenizer, inputs, outputs);
             
@@ -47,7 +47,7 @@ namespace Codegen
             
             Thread.Sleep(500);
             
-            for (int i = 0; i < 100000; i++)
+            for (int i = 0; i < 1000; i++)
             {
                 TokenizeBatch_DISASM(tokenizer, inputs, outputs);
             
@@ -63,7 +63,7 @@ namespace Codegen
             ReadOnlySpan<string> inputs,
             NativeMemory<TokenizeOutput> outputs)
         {
-            tokenizer.TokenizeBatch(inputs, outputs);
+            tokenizer.TokenizeBatch(inputs, outputs.Buffer);
         }
         
         [MethodImpl(DISASM_METHOD_IMPL_OPTIONS)]
