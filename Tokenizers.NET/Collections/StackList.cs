@@ -103,6 +103,12 @@ namespace Tokenizers.NET.Collections
         }
         
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public NativeBuffer<T>.Enumerator GetEnumerator()
+        {
+            return AsSlicedNativeBuffer().GetEnumerator();
+        }
+        
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void Clear()
         {
             Count = 0;

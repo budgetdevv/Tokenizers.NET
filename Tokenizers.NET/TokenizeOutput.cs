@@ -325,6 +325,33 @@ namespace Tokenizers.NET
                 return;
             }
         }
+
+        private const int NUM_HANDLES = 2;
+        
+        [InlineArray(NUM_HANDLES)]
+        private struct DisposeFixedBuffer
+        {
+            public nint First;
+
+            [Obsolete("Use constructor with parameters.", error: true)]
+            public DisposeFixedBuffer()
+            {
+                throw new NotSupportedException("Use constructor with parameters.");
+            }
+            
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            public DisposeFixedBuffer(nint handle1, nint handle2)
+            {
+                First = handle1;
+                this[1] = handle2;
+            }
+            
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            public nint* AsPointerUnsafely()
+            {
+                return (nint*) Unsafe.AsPointer(ref First);
+            }
+        }
         
         [SkipLocalsInit]
         // May be used in hot paths, where results are read and discarded
@@ -336,31 +363,11 @@ namespace Tokenizers.NET
 
             var freeOverflowingTokens = overflowingTokensHandle != nint.Zero;
 
-            // Workaround for issue described in https://github.com/dotnet/runtime/pull/108356,
-            // which prevents this method from being inlined, even with AggressiveInlining
-            
-            // Also see: https://canary.discord.com/channels/143867839282020352/312132327348240384/1289643442388860998
-            
-            // It is fine to over-allocate a bit anyway
-            const int NUM_HANDLES = 2, PESSIMIZED_NINT_SIZE = 8;
-            
-            var bytePtr = stackalloc byte[NUM_HANDLES * PESSIMIZED_NINT_SIZE];
-            
-            #if DEBUG
-            // Ensure it is aligned ( I believe stackallocs are aligned to 16 bytes )
-            // See: https://canary.discord.com/channels/143867839282020352/312132327348240384/1089221542883377233
-            // Being aligned to 8 would also mean being aligned to 4
-            var addr = (nint) bytePtr;
-            Debug.Assert(addr % PESSIMIZED_NINT_SIZE == 0);
-            #endif
-            
-            var ptr = (nint*) bytePtr;
-            
-            *ptr = originalOutputFreeHandle;
-            *(ptr + 1) = overflowingTokensHandle;
+            // The order here is important, as we truncate the length based on freeOverflowingTokens
+            var buffer = new DisposeFixedBuffer(originalOutputFreeHandle, overflowingTokensHandle);
                 
             TokenizerNativeMethods.FreeWithMultipleHandles(new(
-                ptr, 
+                buffer.AsPointerUnsafely(), 
                 length: freeOverflowingTokens ? (nuint) 2 : 1)
             );
         }

@@ -49,6 +49,38 @@ namespace Tokenizers.NET.Collections
         {
             return new((F*) Ptr, UnsafeHelpers.CalculateCastLength<T, F>(Length));
         }
+        
+        public struct Enumerator
+        {
+            private T* CurrentPtr;
+
+            private readonly T* LastPtrOffsetByOne;
+            
+            public ref T Current 
+            {
+                [MethodImpl(MethodImplOptions.AggressiveInlining)]
+                get => ref *CurrentPtr;
+            }
+            
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            internal Enumerator(T* ptr, nuint length)
+            {
+                LastPtrOffsetByOne = ptr + length;
+                CurrentPtr = ptr - 1;
+            }
+            
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            public bool MoveNext()
+            {
+                return ++CurrentPtr != LastPtrOffsetByOne;
+            }
+        }
+        
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public Enumerator GetEnumerator()
+        {
+            return new(Ptr, Length);
+        }
     }
     
     [StructLayout(LayoutKind.Sequential)]
@@ -63,7 +95,6 @@ namespace Tokenizers.NET.Collections
         {
             // Nothing here
         }
-        
         
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public ReadOnlyNativeBuffer(ReadOnlySpan<T> pinnedSpan) :
@@ -95,6 +126,38 @@ namespace Tokenizers.NET.Collections
         public ReadOnlyNativeBuffer<F> Cast<F>() where F: unmanaged
         {
             return new((F*) Ptr, UnsafeHelpers.CalculateCastLength<T, F>(Length));
+        }
+        
+        public struct Enumerator
+        {
+            private T* CurrentPtr;
+
+            private readonly T* LastPtrOffsetByOne;
+            
+            public readonly ref T Current 
+            {
+                [MethodImpl(MethodImplOptions.AggressiveInlining)]
+                get => ref *CurrentPtr;
+            }
+            
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            internal Enumerator(T* ptr, nuint length)
+            {
+                LastPtrOffsetByOne = ptr + length;
+                CurrentPtr = ptr - 1;
+            }
+            
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            public bool MoveNext()
+            {
+                return ++CurrentPtr != LastPtrOffsetByOne;
+            }
+        }
+        
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public Enumerator GetEnumerator()
+        {
+            return new(Ptr, Length);
         }
     }
 }

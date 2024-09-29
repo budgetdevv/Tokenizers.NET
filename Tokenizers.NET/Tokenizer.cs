@@ -2,12 +2,12 @@
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.IO;
-using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Text;
 using System.Text.Json;
 using Tokenizers.NET.Collections;
+using Tokenizers.NET.Enumerators;
 using Tokenizers.NET.Helpers;
 
 namespace Tokenizers.NET
@@ -241,10 +241,18 @@ namespace Tokenizers.NET
         private readonly TempFixedAllocator Allocator;
         
         private readonly nint TokenizerHandle;
+
+        public Tokenizer.BuiltConfig Config
+        {
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            get => ConfigT.BuiltConfig;
+        }
         
-        public Tokenizer.BuiltConfig Config => ConfigT.BuiltConfig;
-        
-        public bool Truncate => ConfigT.BuiltConfig.Truncates;
+        public bool Truncate
+        {
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            get => Config.Truncates;
+        }
         
         public Tokenizer()
         {
@@ -358,7 +366,7 @@ namespace Tokenizers.NET
         [InlineArray(MAX_STACK_ALLOC_NUM_INPUTS)]
         private struct FixedBuffer<T> where T: unmanaged
         {
-            public T First;
+            private T First;
 
             [UnscopedRef]
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -370,9 +378,7 @@ namespace Tokenizers.NET
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             public T* AsPointerUnsafely()
             {
-                var span = AsSpan();
-                
-                return (T*) Unsafe.AsPointer(ref MemoryMarshal.GetReference(span));
+                return (T*) Unsafe.AsPointer(ref First);
             }
         }
         
@@ -406,7 +412,9 @@ namespace Tokenizers.NET
             
             var allocator = Allocator.GetHandle();
             
-            foreach (var input in inputs)
+            var inputsEnumerator = new UnsafeReadOnlySpanEnumerator<string>(inputs);
+            
+            foreach (var input in inputsEnumerator)
             {
                 Span<byte> allocation;
 
@@ -448,7 +456,7 @@ namespace Tokenizers.NET
                 truncate
             );
 
-            foreach (var nativeMemory in nativeAllocations.AsSpan())
+            foreach (var nativeMemory in nativeAllocations)
             {
                 nativeMemory.Dispose();
             }
