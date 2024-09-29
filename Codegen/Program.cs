@@ -64,7 +64,12 @@ namespace Codegen
             ReadOnlySpan<string> inputs,
             NativeMemory<TokenizeOutput> outputs)
         {
-            tokenizer.TokenizeBatch(inputs, outputs.Buffer);
+            tokenizer.TokenizeBatchInternal(
+                inputs,
+                outputs.Buffer,
+                skipLengthCheck: true,
+                addSpecialTokens: true
+            );
         }
         
         [MethodImpl(DISASM_METHOD_IMPL_OPTIONS)]

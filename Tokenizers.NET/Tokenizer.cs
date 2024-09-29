@@ -410,7 +410,7 @@ namespace Tokenizers.NET
         
         [SkipLocalsInit]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private void TokenizeBatchInternal(
+        internal void TokenizeBatchInternal(
             ReadOnlySpan<string> inputs,
             NativeBuffer<TokenizeOutput> outputs,
             bool skipLengthCheck,
