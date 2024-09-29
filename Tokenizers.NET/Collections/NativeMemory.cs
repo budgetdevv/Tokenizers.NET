@@ -10,11 +10,13 @@ namespace Tokenizers.NET.Collections
     {
         public readonly NativeBuffer<T> Buffer;
 
+        [Obsolete("Use constructor with parameters.", error: true)]
         public NativeMemory()
         {
-            throw new NotSupportedException();
+            throw new NotSupportedException("Use constructor with parameters.");
         }
         
+        [MethodImpl(MethodImplOptions.NoInlining)]
         public NativeMemory(nuint length)
         {
             var ptr = (T*) NativeMemory.Alloc(length, (nuint) sizeof(T));
