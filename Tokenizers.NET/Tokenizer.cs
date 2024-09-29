@@ -442,7 +442,7 @@ namespace Tokenizers.NET
             
             foreach (var input in inputs)
             {
-                NativeBuffer<byte> allocation;
+                Span<byte> allocation;
 
                 var inputLength = input.Length;
                     
@@ -454,9 +454,7 @@ namespace Tokenizers.NET
                 {
                     var arr = allocator.Allocate();
                     
-                    // allocation = MemoryMarshal.CreateSpan(ref MemoryMarshal.GetArrayDataReference(arr), arr.Length);
-                    
-                    allocation = new(arr, (nuint) arr.Length);
+                    allocation = MemoryMarshal.CreateSpan(ref MemoryMarshal.GetArrayDataReference(arr), arr.Length);
                 }
 
                 else
@@ -465,22 +463,15 @@ namespace Tokenizers.NET
                     
                     nativeAllocations.Add(nativeMemory);
 
-                    allocation = nativeMemory.Buffer;
+                    allocation = nativeMemory.Buffer.AsSpan();
                 }
                 
-                nuint bytesWritten;
+                var bytesWritten = Encoding.UTF8.GetBytes(input, allocation);
                 
-                fixed (char* charPtr = input)
-                {
-                    bytesWritten = (nuint) Encoding.UTF8.GetBytes(
-                        charPtr, 
-                        charCount: input.Length, 
-                        allocation.Ptr, 
-                        (int) allocation.Length
-                    );
-                }
-                
-                u8Strings.Add(new(allocation.Ptr, bytesWritten));
+                u8Strings.Add(new(
+                    (byte*) Unsafe.AsPointer(ref MemoryMarshal.GetReference(allocation)),
+                    (nuint) bytesWritten)
+                );
             }
             
             var readonlyU8Strings = u8Strings.AsSlicedNativeBuffer().AsReadOnly();
