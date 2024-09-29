@@ -154,6 +154,7 @@ namespace Tokenizers.NET
                 var maxExpectedBatches = config.ExpectedMaxBatches;
                 
                 var buffers = Buffers = AllocationHelpers.AllocatePinnedUninitialized<byte[]>(maxExpectedBatches);
+                
                 Count = maxExpectedBatches.ToSignedUnchecked();
                 
                 for (var i = 0; i < maxExpectedBatches; i++)
@@ -161,7 +162,7 @@ namespace Tokenizers.NET
                     buffers[i] = AllocationHelpers.AllocatePinnedUninitialized<byte>(BUFFER_SIZE);
                 }
                 
-                if (Buffers.Length == 0)
+                if (buffers.Length == 0)
                 {
                     throw new InvalidOperationException("Buffers length cannot be zero.");
                 }
