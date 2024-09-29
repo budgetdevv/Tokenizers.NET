@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Net.Http;
 using System.Runtime.CompilerServices;
+using System.Threading;
 using Tokenizers.NET;
 using Tokenizers.NET.Collections;
 
@@ -37,17 +38,29 @@ namespace Codegen
             
             var outputs = new NativeMemory<TokenizeOutput>((nuint) inputs.Length);
             
-            TokenizeBatch_DISASM(tokenizer, inputs, outputs);
+            for (int i = 0; i < 100000; i++)
+            {
+                TokenizeBatch_DISASM(tokenizer, inputs, outputs);
             
-            DisposeTokenizeBatchOutput_DISASM(*outputs.Buffer.Ptr);
+                DisposeTokenizeBatchOutput_DISASM(*outputs.Buffer.Ptr);
+            }
+            
+            Thread.Sleep(500);
+            
+            for (int i = 0; i < 100000; i++)
+            {
+                TokenizeBatch_DISASM(tokenizer, inputs, outputs);
+            
+                DisposeTokenizeBatchOutput_DISASM(*outputs.Buffer.Ptr);
+            }
         }
         
-        private const MethodImplOptions DISASM_METHOD_IMPL_OPTIONS = MethodImplOptions.NoInlining | MethodImplOptions.AggressiveOptimization;
+        private const MethodImplOptions DISASM_METHOD_IMPL_OPTIONS = MethodImplOptions.NoInlining; // | MethodImplOptions.AggressiveOptimization;
         
         [MethodImpl(DISASM_METHOD_IMPL_OPTIONS)]
         private static void TokenizeBatch_DISASM(
-            Tokenizer<TokenizerConfig> 
-            tokenizer, ReadOnlySpan<string> inputs,
+            Tokenizer<TokenizerConfig> tokenizer,
+            ReadOnlySpan<string> inputs,
             NativeMemory<TokenizeOutput> outputs)
         {
             tokenizer.TokenizeBatch(inputs, outputs);
