@@ -383,6 +383,27 @@ namespace Tokenizers.NET
             return outputs;
         }
 
+        [InlineArray(32)]
+        private struct FixedBuffer32<T> where T: unmanaged
+        {
+            public T First;
+
+            [UnscopedRef]
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            public Span<T> AsSpan()
+            {
+                return this;
+            }
+            
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            public T* AsPointerUnsafely()
+            {
+                var span = AsSpan();
+                
+                return (T*) Unsafe.AsPointer(ref MemoryMarshal.GetReference(span));
+            }
+        }
+        
         [SkipLocalsInit]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private void TokenizeBatchInternal(
@@ -408,33 +429,21 @@ namespace Tokenizers.NET
             
             // How PESSIMIZED_NATIVE_MEMORY_SIZE is calculated:
             // https://sharplab.io/#v2:EYLgxg9gTgpgtADwGwBYA0AXEUCuA7AHwAEAmARgFgAoIgBgAIiyA6AJXwwEsBbGZgYQjcADpwA2MKAGVJAN05gYAZwDc1Ooxbs8XXswCSOyRGEyo8xaurV8SgIYAzGNQDe1eh80BOABRLOAF4wEA4+AHJ2XLIwALIw3NAAngA8wIkYMAB8AJTZalSe3n6BwaERUTAAQjgOTlCp6Vm5+QC+1lQA2lIYuGAYADJ2iRA4GD6Dw6MA0px4ACbMMgCOODA6nHZi2QC66gDM9LB2cxB4Yon0to4w9Eo9OH305ZzRcQlQKQAqmfQg9PoAEU4SmEEHswAkaH+AFEVpE7BCYMlnq94klkt9Mu5PAB3AAWkhun1+lzw3DseDsAHMYHNXNiPEQDkcTmcLiiqjU6hiftVapJ8gzGAcOW8kj5skK3AVCp4MHioBAcfQ8DBlWEIBgpDhhKCoBk5tCEIphFxThL8oU2lQhUynpEXrE0R8fHgcLMMPQJHgqfLJTKPNLZZ5ZHYoPRTeGALz0HyfABU2VFzsSzAAgmIxBAwD5vb68VDXe6dNl/EEQnHmu1gx4+XV6DHVTifJGoXm/ZbPNahR04vKIHN9CIxD4+3iB0PhGIAPKmzinJTpqlU2BKfzRQxiWazKk7W0HJhIe0VMUfHn0ADqUDswjrknCDuid/q33owC5kn9hSDNaIAHZ6AAVTwewnGYSpOAwfg7DuZFH05fkX0yKFk3eL5MkyHx30QvIhW7AN6F7GB+0HYdR2I8dSKnWczRApcV2UdcYE3bcfT3Ai7WACAIDEehYRwTYlAfE8U3PTUCSgL9PB/YNQ3DcTJGfBt6AUqBwI/KBO1ksM3w05Tn0FAjCn/FT5UUjTmAABR6BsY2wuorJsgAyJzTIk59mH6NZ81s3TEM87z5S0+h8OMg4IGiKAoE4OYbi4ni+LhMQhIgYAACsYD6AB+FT0qkwMhWMgDUrS+hgWPR1T3QtzJHoFzEoE5KfFU3CCNCzwiJIycRzHCdhxo+c6LTZdVyYli8B3diwpUyLotisqdHoABxYiAAkYLxQRYolKVCs8EyfA9bIPOszS8OrfaDzII94t4kxJEiaBbOEyrRNfCQHAwFD4Kq89oqpPEMHy+gZNlEyPowZh+MEnx/sB1qrQuxkrpu7i7uEB6MCegBCKMXtRNDzwh76RMJ184aB3ajP2gDsYhqGkqEimEa7JHhUYFB6CBEEwRgHaCNBwpUKSZgADFYD5k6ehZjxrXwrp7j6CYRjGZXplmBZllWdZNnYu0WVOc5SVAm47l6T0OWfHk43jCMeihN0PS9QK8Wyeh8UJehiT+fByUpGk6SoUH9ZgY5DYuBN6FO5TI2CkOw7ZFVi09LyfXlZT2zxVogA
+
+            var nativeAllocationsFixedBuffer = new FixedBuffer32<NativeMemory<byte>>();
             
-            const int
-                MAX_STACK_ALLOC_NUM_INPUTS = 2,
-                PESSIMIZED_NATIVE_MEMORY_SIZE = 16,
-                STACK_ALLOC_SIZE_PER_INSTANCE = MAX_STACK_ALLOC_NUM_INPUTS * PESSIMIZED_NATIVE_MEMORY_SIZE;
-            
-            // STACK_ALLOC_SIZE_PER_INSTANCE must be <= 32, unfortunately...
-            // If not, inlining is blocked for some reason
-            var nativeAllocationsPtr = stackalloc byte[STACK_ALLOC_SIZE_PER_INSTANCE];
-            
-            var u8StringsPtr = stackalloc byte[STACK_ALLOC_SIZE_PER_INSTANCE];
-            
-            #if DEBUG
-            Debug.Assert(sizeof(NativeMemory<byte>) == sizeof(ReadOnlyNativeBuffer<byte>));
-            Debug.Assert(sizeof(NativeMemory<byte>) <= PESSIMIZED_NATIVE_MEMORY_SIZE);
-            
-            // Ensure address are naturally aligned
-            Debug.Assert(((nint) nativeAllocationsPtr) % sizeof(NativeMemory<byte>) == 0);
-            Debug.Assert(((nint) u8StringsPtr) % sizeof(NativeMemory<byte>) == 0);
-            #endif
+            var u8StringsFixedBuffer = new FixedBuffer32<ReadOnlyNativeBuffer<byte>>();
+
+            const int MAX_STACK_ALLOC_NUM_INPUTS = 32;
             
             var nativeAllocations = new StackList<NativeMemory<byte>>(
-                (NativeMemory<byte>*) nativeAllocationsPtr, MAX_STACK_ALLOC_NUM_INPUTS
+                nativeAllocationsFixedBuffer.AsPointerUnsafely(),
+                MAX_STACK_ALLOC_NUM_INPUTS
             );
             
             var u8Strings = new StackList<ReadOnlyNativeBuffer<byte>>(
-                (ReadOnlyNativeBuffer<byte>*) u8StringsPtr, MAX_STACK_ALLOC_NUM_INPUTS
+                u8StringsFixedBuffer.AsPointerUnsafely(),
+                MAX_STACK_ALLOC_NUM_INPUTS
             );
             
             var allocator = Allocator.GetHandle();
