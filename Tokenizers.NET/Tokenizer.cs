@@ -140,7 +140,9 @@ namespace Tokenizers.NET
     {
         private readonly struct TempFixedAllocator
         {
-            public static readonly int PER_BUFFER_SIZE = Encoding.UTF8.GetMaxByteCount(ConfigT.BuiltConfig.ExpectedMaxInputLength.ToSignedUnchecked());
+            public static readonly int 
+                PER_BUFFER_SIZE = Encoding.UTF8.GetMaxByteCount(ConfigT.BuiltConfig.ExpectedMaxInputLength.ToSignedUnchecked()),
+                TOTAL_BUFFER_SIZE = PER_BUFFER_SIZE * ConfigT.BuiltConfig.ExpectedMaxBatches.ToSignedUnchecked();
             
             // We need to keep a GC reference to it
             // Yes, technically we could malloc, but POH allocation does have its benefits,
@@ -165,7 +167,7 @@ namespace Tokenizers.NET
                 var maxExpectedBatches = config.ExpectedMaxBatches.ToSignedUnchecked();
                 
                 var buffers = Buffers = AllocationHelpers.AllocatePinnedUninitialized<byte>(
-                    PER_BUFFER_SIZE * maxExpectedBatches
+                    TOTAL_BUFFER_SIZE
                 );
                 
                 BuffersPtr = (byte*) Unsafe.AsPointer(ref MemoryMarshal.GetArrayDataReference(buffers));
@@ -229,9 +231,9 @@ namespace Tokenizers.NET
             }
             
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            public NativeBuffer<byte> GetFirstAllocationUnsafely()
+            public NativeBuffer<byte> GetFullAllocationUnsafely()
             {
-                return new(BuffersPtr, (nuint) PER_BUFFER_SIZE);
+                return new(BuffersPtr, (nuint) TOTAL_BUFFER_SIZE);
             }
         }
         
@@ -268,26 +270,12 @@ namespace Tokenizers.NET
             var inputLength = input.Length;
 
             Unsafe.SkipInit(out NativeMemory<byte> nativeMemory);
-            
-            var allocateNative = inputLength > Config.ExpectedMaxInputLength;
+
+            var allocateNative = inputLength > TempFixedAllocator.TOTAL_BUFFER_SIZE;
             
             if (!allocateNative)
             {
-                const int MAX_STACK_ALLOC = 4096;
-                
-                // This branch is free
-                if (MAX_STACK_ALLOC >= TempFixedAllocator.PER_BUFFER_SIZE)
-                {
-                    // A result of a stackalloc expression of this type in this context may be exposed outside of the containing method
-                    #pragma warning disable CS9081
-                    allocation = stackalloc byte[MAX_STACK_ALLOC];
-                    #pragma warning restore CS9081
-                }
-
-                else
-                {
-                    allocation = Allocator.GetFirstAllocationUnsafely().AsSpan();
-                }
+                allocation = Allocator.GetFullAllocationUnsafely().AsSpan();
             }
 
             else
