@@ -12,7 +12,7 @@ namespace Tokenizers.NET
         public static partial nint AllocateTokenizer(byte* jsonBytesPtr, nuint jsonBytesLength);
         
         [LibraryImport(DLL_NAME, EntryPoint = "free_tokenizer")]
-        public static partial nint FreeTokenizer(nint tokenizerHandle);
+        public static partial void FreeTokenizer(nint tokenizerHandle);
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static TokenizeOutput TokenizerEncode(
