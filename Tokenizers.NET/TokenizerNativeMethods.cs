@@ -4,15 +4,15 @@ using Tokenizers.NET.Collections;
 
 namespace Tokenizers.NET
 {
-    internal static unsafe class TokenizerNativeMethods
+    internal static unsafe partial class TokenizerNativeMethods
     {
         private const string DLL_NAME = "tokenizers_net";
 
-        [DllImport(DLL_NAME, EntryPoint = "allocate_tokenizer", CallingConvention = CallingConvention.Cdecl, ExactSpelling = true)]
-        public static extern nint AllocateTokenizer(byte* jsonBytesPtr, nuint jsonBytesLength);
+        [LibraryImport(DLL_NAME, EntryPoint = "allocate_tokenizer")]
+        public static partial nint AllocateTokenizer(byte* jsonBytesPtr, nuint jsonBytesLength);
         
-        [DllImport(DLL_NAME, EntryPoint = "free_tokenizer", CallingConvention = CallingConvention.Cdecl, ExactSpelling = true)]
-        public static extern nint FreeTokenizer(nint tokenizerHandle);
+        [LibraryImport(DLL_NAME, EntryPoint = "free_tokenizer")]
+        public static partial nint FreeTokenizer(nint tokenizerHandle);
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static TokenizeOutput TokenizerEncode(
@@ -21,31 +21,35 @@ namespace Tokenizers.NET
             bool addSpecialTokens,
             bool truncate)
         {
+            // https://github.com/rust-lang/reference/blob/master/src/behavior-considered-undefined.md
+            // "A bool value must be false (0) or true (1)."
+            var addSpecialTokensByte = unchecked((byte) (addSpecialTokens ? 1 : 0));
+            
             if (truncate)
             {
-                return TokenizerEncode(tokenizerPtr, textNativeBuffer, addSpecialTokens);
+                return TokenizerEncode(tokenizerPtr, textNativeBuffer, addSpecialTokensByte);
             }
 
             else
             {
-                return TokenizerEncodeNonTruncating(tokenizerPtr, textNativeBuffer, addSpecialTokens);
+                return TokenizerEncodeNonTruncating(tokenizerPtr, textNativeBuffer, addSpecialTokensByte);
             }
         }
         
-        [SuppressGCTransition]
-        [DllImport(DLL_NAME, EntryPoint = "tokenizer_encode", CallingConvention = CallingConvention.Cdecl, ExactSpelling = true)]
-        private static extern TokenizeOutput TokenizerEncode(
+        [LibraryImport(DLL_NAME, EntryPoint = "tokenizer_encode")]
+        [SuppressGCTransition, MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static partial TokenizeOutput TokenizerEncode(
             nint tokenizerPtr,
             ReadOnlyNativeBuffer<byte> textNativeBuffer,
-            [MarshalAs(UnmanagedType.U1)] bool addSpecialTokens
+            byte addSpecialTokens
         );
         
-        [SuppressGCTransition]
-        [DllImport(DLL_NAME, EntryPoint = "tokenizer_encode_non_truncating", CallingConvention = CallingConvention.Cdecl, ExactSpelling = true)]
-        private static extern TokenizeOutput TokenizerEncodeNonTruncating(
+        [LibraryImport(DLL_NAME, EntryPoint = "tokenizer_encode_non_truncating")]
+        [SuppressGCTransition, MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static partial TokenizeOutput TokenizerEncodeNonTruncating(
             nint tokenizerPtr,
             ReadOnlyNativeBuffer<byte> textNativeBuffer,
-            [MarshalAs(UnmanagedType.U1)] bool addSpecialTokens
+            byte addSpecialTokens
         );
         
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -56,33 +60,37 @@ namespace Tokenizers.NET
             bool addSpecialTokens,
             bool truncate)
         {
+            // https://github.com/rust-lang/reference/blob/master/src/behavior-considered-undefined.md
+            // "A bool value must be false (0) or true (1)."
+            var addSpecialTokensByte = unchecked((byte) (addSpecialTokens ? 1 : 0));
+            
             if (truncate)
             {
-                TokenizerEncodeBatch(tokenizerPtr, textNativeBuffers, outputNativeBuffer, addSpecialTokens);
+                TokenizerEncodeBatch(tokenizerPtr, textNativeBuffers, outputNativeBuffer, addSpecialTokensByte);
             }
             
             else
             {
-                TokenizerEncodeBatchNonTruncating(tokenizerPtr, textNativeBuffers, outputNativeBuffer, addSpecialTokens);
+                TokenizerEncodeBatchNonTruncating(tokenizerPtr, textNativeBuffers, outputNativeBuffer, addSpecialTokensByte);
             }
         }
         
-        [SuppressGCTransition]
-        [DllImport(DLL_NAME, EntryPoint = "tokenizer_encode_batch", CallingConvention = CallingConvention.Cdecl, ExactSpelling = true)]
-        private static extern void TokenizerEncodeBatch(
+        [LibraryImport(DLL_NAME, EntryPoint = "tokenizer_encode_batch")]
+        [SuppressGCTransition, MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static partial void TokenizerEncodeBatch(
             nint tokenizerPtr, 
             ReadOnlyNativeBuffer<ReadOnlyNativeBuffer<byte>> textNativeBuffers, 
             NativeBuffer<TokenizeOutput> outputNativeBuffer,
-            [MarshalAs(UnmanagedType.U1)] bool addSpecialTokens
+            byte addSpecialTokens
         );
         
-        [SuppressGCTransition]
-        [DllImport(DLL_NAME, EntryPoint = "tokenizer_encode_batch_non_truncating", CallingConvention = CallingConvention.Cdecl, ExactSpelling = true)]
-        private static extern void TokenizerEncodeBatchNonTruncating(
+        [LibraryImport(DLL_NAME, EntryPoint = "tokenizer_encode_batch_non_truncating")]
+        [SuppressGCTransition, MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static partial void TokenizerEncodeBatchNonTruncating(
             nint tokenizerPtr, 
             ReadOnlyNativeBuffer<ReadOnlyNativeBuffer<byte>> textNativeBuffers, 
             NativeBuffer<TokenizeOutput> outputNativeBuffer,
-            [MarshalAs(UnmanagedType.U1)] bool addSpecialTokens
+            byte addSpecialTokens
         );
         
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -102,20 +110,20 @@ namespace Tokenizers.NET
             }
         }
         
-        [SuppressGCTransition]
-        [DllImport(DLL_NAME, EntryPoint = "tokenizer_decode", CallingConvention = CallingConvention.Cdecl, ExactSpelling = true)]
-        private static extern DecodeOutput TokenizerDecode(nint tokenizerPtr, ReadOnlyNativeBuffer<uint> idBuffer);
+        [LibraryImport(DLL_NAME, EntryPoint = "tokenizer_decode")]
+        [SuppressGCTransition, MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static partial DecodeOutput TokenizerDecode(nint tokenizerPtr, ReadOnlyNativeBuffer<uint> idBuffer);
 
-        [SuppressGCTransition]
-        [DllImport(DLL_NAME, EntryPoint = "tokenizer_decode_skip_special_tokens", CallingConvention = CallingConvention.Cdecl, ExactSpelling = true)]
-        private static extern DecodeOutput TokenizerDecodeSkipSpecialTokens(nint tokenizerPtr, ReadOnlyNativeBuffer<uint> idBuffer);
+        [LibraryImport(DLL_NAME, EntryPoint = "tokenizer_decode_skip_special_tokens")]
+        [SuppressGCTransition, MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static partial DecodeOutput TokenizerDecodeSkipSpecialTokens(nint tokenizerPtr, ReadOnlyNativeBuffer<uint> idBuffer);
 
-        [SuppressGCTransition]
-        [DllImport(DLL_NAME, EntryPoint = "free_with_handle", CallingConvention = CallingConvention.Cdecl, ExactSpelling = true)]
-        public static extern void FreeWithHandle(nint handle);
+        [LibraryImport(DLL_NAME, EntryPoint = "free_with_handle")]
+        [SuppressGCTransition, MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static partial void FreeWithHandle(nint handle);
         
-        [SuppressGCTransition]
-        [DllImport(DLL_NAME, EntryPoint = "free_with_multiple_handles", CallingConvention = CallingConvention.Cdecl, ExactSpelling = true)]
-        public static extern void FreeWithMultipleHandles(ReadOnlyNativeBuffer<nint> handles);
+        [LibraryImport(DLL_NAME, EntryPoint = "free_with_multiple_handles")] 
+        [SuppressGCTransition, MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static partial void FreeWithMultipleHandles(ReadOnlyNativeBuffer<nint> handles);
     }
 }
