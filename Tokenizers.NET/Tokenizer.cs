@@ -256,14 +256,11 @@ namespace Tokenizers.NET
         
         public Tokenizer()
         {
-            var rawTokenizerData = Config.RawTokenizerData.Buffer;
+            var rawTokenizerData = Config.RawTokenizerData.Buffer.AsReadOnly();
             
             Allocator = new();
 
-            TokenizerHandle = TokenizerNativeMethods.AllocateTokenizer(
-                rawTokenizerData.Ptr,
-                rawTokenizerData.Length
-            );
+            TokenizerHandle = TokenizerNativeMethods.AllocateTokenizer(rawTokenizerData);
         }
         
         [SkipLocalsInit]

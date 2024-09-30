@@ -9,7 +9,7 @@ namespace Tokenizers.NET
         private const string DLL_NAME = "tokenizers_net";
 
         [LibraryImport(DLL_NAME, EntryPoint = "allocate_tokenizer")]
-        public static partial nint AllocateTokenizer(byte* jsonBytesPtr, nuint jsonBytesLength);
+        public static partial nint AllocateTokenizer(ReadOnlyNativeBuffer<byte> jsonBytes);
         
         [LibraryImport(DLL_NAME, EntryPoint = "free_tokenizer")]
         public static partial void FreeTokenizer(nint tokenizerHandle);

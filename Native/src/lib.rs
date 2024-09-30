@@ -231,11 +231,10 @@ impl TokenizeOutputOverflowedToken
 
 #[no_mangle]
 pub unsafe extern "C" fn allocate_tokenizer(
-    json_bytes_ptr: *const u8,
-    json_bytes_length: usize,
-) -> *mut Tokenizer
+    json_bytes: ReadOnlyBuffer<u8>)
+    -> *mut Tokenizer
 {
-    let json_bytes = slice::from_raw_parts(json_bytes_ptr, json_bytes_length);
+    let json_bytes = json_bytes.as_slice();
 
     let tokenizer = Tokenizer::from_bytes(json_bytes).unwrap();
 
