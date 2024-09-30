@@ -140,26 +140,37 @@ namespace Tokenizers.NET
     {
         private readonly struct TempFixedAllocator
         {
-            public static readonly int BUFFER_SIZE = Encoding.UTF8.GetMaxByteCount(ConfigT.BuiltConfig.ExpectedMaxInputLength.ToSignedUnchecked());
+            public static readonly int PER_BUFFER_SIZE = Encoding.UTF8.GetMaxByteCount(ConfigT.BuiltConfig.ExpectedMaxInputLength.ToSignedUnchecked());
             
-            private readonly byte[][] Buffers;
+            // We need to keep a GC reference to it
+            // Yes, technically we could malloc, but POH allocation does have its benefits,
+            // such as the GC automatically cleaning it up when the entire tokenizer is out of scope.
+            // It should also work better with existing .NET debugging tools.
+            
+            // While we could use Unsafe.AsPointer(ref MemoryMarshal.GetArrayDataReference(Buffers))
+            // to obtain a pointer, GetArrayDataReference emit instructiont that does a null check.
+            // We already know that Buffers will never be null...
+            
+            // ReSharper disable once NotAccessedField.Local
+            private readonly byte[] Buffers;
+            
+            private readonly byte* BuffersPtr;
 
             private readonly int Count;
 
             public TempFixedAllocator()
             {
                 var config = ConfigT.BuiltConfig;
+
+                var maxExpectedBatches = config.ExpectedMaxBatches.ToSignedUnchecked();
                 
-                var maxExpectedBatches = config.ExpectedMaxBatches;
+                var buffers = Buffers = AllocationHelpers.AllocatePinnedUninitialized<byte>(
+                    PER_BUFFER_SIZE * maxExpectedBatches
+                );
                 
-                var buffers = Buffers = AllocationHelpers.AllocatePinnedUninitialized<byte[]>(maxExpectedBatches);
-                
-                Count = maxExpectedBatches.ToSignedUnchecked();
-                
-                for (var i = 0; i < maxExpectedBatches; i++)
-                {
-                    buffers[i] = AllocationHelpers.AllocatePinnedUninitialized<byte>(BUFFER_SIZE);
-                }
+                BuffersPtr = (byte*) Unsafe.AsPointer(ref MemoryMarshal.GetArrayDataReference(buffers));
+
+                Count = maxExpectedBatches;
                 
                 if (buffers.Length == 0)
                 {
@@ -181,7 +192,7 @@ namespace Tokenizers.NET
                 }
                 
                 [MethodImpl(MethodImplOptions.AggressiveInlining)]
-                public bool TryAllocate(out byte[]? buffer)
+                public bool TryAllocate(out NativeBuffer<byte> buffer)
                 {
                     return Allocator.TryAllocate(ref this, out buffer);
                 }
@@ -194,14 +205,15 @@ namespace Tokenizers.NET
                 return new(in this);
             }
             
+            [SkipLocalsInit]
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            private bool TryAllocate(ref Handle handle, out byte[]? buffer)
+            private bool TryAllocate(ref Handle handle, out NativeBuffer<byte> buffer)
             {
                 var count = handle.CurrentCount;
                 
                 var success = count != 0;
 
-                buffer = null;
+                Unsafe.SkipInit(out buffer);
                 
                 if (success)
                 {
@@ -210,31 +222,16 @@ namespace Tokenizers.NET
                     // Don't clear underlying reference, this is to ensure that the buffer will not be collected by GC.
                     // When p/invoking, we pass the pointer to the buffer, so we don't want it to be collected.
                     // It is also more performant to avoid clearing...
-                    buffer = Unsafe.Add(ref MemoryMarshal.GetArrayDataReference(Buffers), readIndex);
+                    buffer = new(BuffersPtr + (readIndex.ToUnsignedUnchecked() * (uint) PER_BUFFER_SIZE), (uint) PER_BUFFER_SIZE);
                 }
 
                 return success;
             }
-
-            [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            private byte[] AllocateUnsafely(ref Handle handle)
-            {
-                var readIndex = --handle.CurrentCount;
-                
-                #if DEBUG
-                Debug.Assert(readIndex >= 0);
-                #endif
-                    
-                // Don't clear underlying reference, this is to ensure that the buffer will not be collected by GC.
-                // When p/invoking, we pass the pointer to the buffer, so we don't want it to be collected.
-                // It is also more performant to avoid clearing...
-                return Unsafe.Add(ref MemoryMarshal.GetArrayDataReference(Buffers), readIndex);
-            }
             
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            public byte[] GetFirstAllocationUnsafely()
+            public NativeBuffer<byte> GetFirstAllocationUnsafely()
             {
-                return MemoryMarshal.GetArrayDataReference(Buffers);
+                return new(BuffersPtr, (nuint) PER_BUFFER_SIZE);
             }
         }
         
@@ -279,7 +276,7 @@ namespace Tokenizers.NET
                 const int MAX_STACK_ALLOC = 4096;
                 
                 // This branch is free
-                if (MAX_STACK_ALLOC >= TempFixedAllocator.BUFFER_SIZE)
+                if (MAX_STACK_ALLOC >= TempFixedAllocator.PER_BUFFER_SIZE)
                 {
                     // A result of a stackalloc expression of this type in this context may be exposed outside of the containing method
                     #pragma warning disable CS9081
@@ -289,7 +286,7 @@ namespace Tokenizers.NET
 
                 else
                 {
-                    allocation = Allocator.GetFirstAllocationUnsafely();
+                    allocation = Allocator.GetFirstAllocationUnsafely().AsSpan();
                 }
             }
 
@@ -417,9 +414,9 @@ namespace Tokenizers.NET
 
                 var inputLength = input.Length;
                 
-                if (inputLength <= Config.ExpectedMaxInputLength && allocator.TryAllocate(out var arr))
+                if (inputLength <= Config.ExpectedMaxInputLength && allocator.TryAllocate(out var buffer))
                 {
-                    allocation = MemoryMarshal.CreateSpan(ref MemoryMarshal.GetArrayDataReference(arr!), arr!.Length);
+                    allocation = buffer.AsSpan();
                 }
 
                 else
