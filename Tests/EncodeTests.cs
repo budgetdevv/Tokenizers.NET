@@ -237,5 +237,26 @@ namespace Tests
             
             tokenizeResult.Dispose();
         }
+
+        [Test]
+        public void EncodeWithMaxManagedLength()
+        {
+            ref var tokenizer = ref FlorenceTokenizer;
+            
+            var config = tokenizer.Config;
+            
+            var maxManagedLength = config.ExpectedMaxInputLength * config.ExpectedMaxBatches;
+            
+            var text = AllocateStringWithRandomChars((int) maxManagedLength);
+
+            const int ITERATIONS = 500;
+            
+            for (var i = 0; i < ITERATIONS; i++)
+            {
+                var tokenizeResult = tokenizer.Tokenize(text);
+                
+                tokenizeResult.Dispose();
+            }
+        }
     }
 }
