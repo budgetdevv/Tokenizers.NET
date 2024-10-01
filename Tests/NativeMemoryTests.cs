@@ -10,7 +10,7 @@ namespace Tests
         [Test]
         public void WrapBuffer()
         {
-            var nativeMemory = new NativeMemory<byte>(69);
+            using var nativeMemory = new NativeMemory<byte>(69);
             
             var nativeBuffer = nativeMemory.Buffer;
             
