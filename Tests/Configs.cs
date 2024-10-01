@@ -8,8 +8,8 @@ namespace Tests
         {
             private static readonly Tokenizer.BuiltConfig BUILT_CONFIG =
                 new Tokenizer.ConfigBuilder()
-                    .SetExpectedMaxBatches(1024)
-                    .SetExpectedMaxInputLength(16)
+                    .SetExpectedMaxBatches(16)
+                    .SetExpectedMaxInputLength(1024)
                     .SetExceedExpectedMaxBatchesBehavior(Tokenizer.ExceedExpectedMaxBatchesBehavior.AllocateBuffer)
                     .SetTokenizerJsonPath("FlorenceTokenizer.json")
                     .Build();
