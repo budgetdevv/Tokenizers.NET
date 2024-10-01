@@ -133,6 +133,11 @@ namespace Tokenizers.NET
                 Truncates = tokenizerData.Truncation != null;
             }
         }
+        
+        internal static class BuiltConfigCache<ConfigT> where ConfigT: struct, IConfig
+        {
+            public static readonly BuiltConfig BUILT_CONFIG = ConfigT.BuiltConfig;
+        }
     }
     
     public readonly unsafe struct Tokenizer<ConfigT>: IDisposable
@@ -140,9 +145,15 @@ namespace Tokenizers.NET
     {
         private readonly struct TempFixedAllocator
         {
+            private static Tokenizer.BuiltConfig Config
+            {
+                [MethodImpl(MethodImplOptions.AggressiveInlining)]
+                get => Tokenizer.BuiltConfigCache<ConfigT>.BUILT_CONFIG;
+            }
+            
             private static readonly int 
-                PER_BUFFER_SIZE = Encoding.UTF8.GetMaxByteCount(ConfigT.BuiltConfig.ExpectedMaxInputLength.ToSignedUnchecked()),
-                TOTAL_BUFFER_SIZE = PER_BUFFER_SIZE * ConfigT.BuiltConfig.ExpectedMaxBatches.ToSignedUnchecked();
+                PER_BUFFER_SIZE = Encoding.UTF8.GetMaxByteCount(Config.ExpectedMaxInputLength.ToSignedUnchecked()),
+                TOTAL_BUFFER_SIZE = PER_BUFFER_SIZE * Config.ExpectedMaxBatches.ToSignedUnchecked();
             
             // We need to keep a GC reference to it
             // Yes, technically we could malloc, but POH allocation does have its benefits,
@@ -162,9 +173,7 @@ namespace Tokenizers.NET
 
             public TempFixedAllocator()
             {
-                var config = ConfigT.BuiltConfig;
-
-                var maxExpectedBatches = config.ExpectedMaxBatches.ToSignedUnchecked();
+                var maxExpectedBatches = Config.ExpectedMaxBatches.ToSignedUnchecked();
                 
                 var buffers = Buffers = AllocationHelpers.AllocatePinnedUninitialized<byte>(
                     TOTAL_BUFFER_SIZE
@@ -244,7 +253,7 @@ namespace Tokenizers.NET
         public Tokenizer.BuiltConfig Config
         {
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            get => ConfigT.BuiltConfig;
+            get => Tokenizer.BuiltConfigCache<ConfigT>.BUILT_CONFIG;
         }
         
         public bool Truncate

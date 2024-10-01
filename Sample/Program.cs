@@ -7,15 +7,13 @@ namespace Sample
     {
         private struct Config: Tokenizer.IConfig
         {
-            private static readonly Tokenizer.BuiltConfig BUILT_CONFIG =
+            public static Tokenizer.BuiltConfig BuiltConfig => 
                 new Tokenizer.ConfigBuilder()
                 .SetExpectedMaxBatches(1024)
                 .SetExpectedMaxInputLength(16)
                 .SetExceedExpectedMaxBatchesBehavior(Tokenizer.ExceedExpectedMaxBatchesBehavior.AllocateBuffer)
                 .SetTokenizerJsonPath("FlorenceTokenizer.json")
                 .Build();
-
-            public static Tokenizer.BuiltConfig BuiltConfig => BUILT_CONFIG;
         }
 
         private static string GenerateString(char val, int length)

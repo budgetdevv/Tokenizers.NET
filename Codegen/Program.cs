@@ -12,7 +12,7 @@ namespace Codegen
     {
         private struct TokenizerConfig: Tokenizer.IConfig
         {
-            private static readonly Tokenizer.BuiltConfig BUILT_CONFIG =
+            public static Tokenizer.BuiltConfig BuiltConfig =>
                 new Tokenizer.ConfigBuilder()
                     .SetExpectedMaxInputLength(512)
                     .SetExpectedMaxBatches(16)
@@ -20,8 +20,6 @@ namespace Codegen
                     // .SetTokenizerJsonPath("FlorenceTokenizer.json")
                     .SetRawTokenizerData(new HttpClient().GetByteArrayAsync("https://raw.githubusercontent.com/budgetdevv/Tokenizers.NET/refs/heads/main/SampleTokenizers/FlorenceTokenizer.json").Result)
                     .Build();
-
-            public static Tokenizer.BuiltConfig BuiltConfig => BUILT_CONFIG;
         }
         
         static void Main(string[] args)
