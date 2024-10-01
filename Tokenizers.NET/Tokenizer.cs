@@ -152,7 +152,7 @@ namespace Tokenizers.NET
             }
             
             private static readonly int 
-                PER_BUFFER_SIZE = Encoding.UTF8.GetMaxByteCount(Config.ExpectedMaxInputLength.ToSignedUnchecked()),
+                PER_BUFFER_SIZE = UTF8EncodingPirated.GetMaxByteCount(Config.ExpectedMaxInputLength.ToSignedUnchecked()),
                 TOTAL_BUFFER_SIZE = PER_BUFFER_SIZE * Config.ExpectedMaxBatches.ToSignedUnchecked();
             
             // We need to keep a GC reference to it
@@ -293,7 +293,7 @@ namespace Tokenizers.NET
 
             else
             {
-                nativeMemory = new((nuint) Encoding.UTF8.GetMaxByteCount(inputLength));
+                nativeMemory = new((nuint) UTF8EncodingPirated.GetMaxByteCount(inputLength));
                         
                 allocation = nativeMemory.Buffer.AsSpan();
             }
@@ -389,7 +389,7 @@ namespace Tokenizers.NET
             
             if (!skipLengthCheck && numInputs != outputs.Length)
             {
-                ThrowHelpers.TokenizeBatchInternalLengthCheckFailed();
+                ThrowHelpers.TokenizeBatchInternal_LengthCheckFailed();
             }
 
             Unsafe.SkipInit(out FixedBuffer<NativeMemory<byte>> nativeAllocationsFixedBuffer);
@@ -422,7 +422,7 @@ namespace Tokenizers.NET
 
                 else
                 {
-                    var nativeMemory = new NativeMemory<byte>((nuint) Encoding.UTF8.GetMaxByteCount(inputLength));
+                    var nativeMemory = new NativeMemory<byte>((nuint) UTF8EncodingPirated.GetMaxByteCount(inputLength));
                     
                     nativeAllocations.Add(nativeMemory);
 
