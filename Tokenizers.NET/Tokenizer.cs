@@ -276,6 +276,10 @@ namespace Tokenizers.NET
             if (!allocateNative)
             {
                 allocation = Allocator.GetFullAllocationUnsafely().AsSpan();
+                
+                #if DEBUG
+                Debug.Assert(allocation.Length >= Encoding.UTF8.GetMaxByteCount(inputLength));
+                #endif
             }
 
             else
