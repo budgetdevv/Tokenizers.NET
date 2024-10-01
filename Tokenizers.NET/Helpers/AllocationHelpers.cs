@@ -14,7 +14,7 @@ namespace Tokenizers.NET.Helpers
         
         public static T[] AllocatePinnedUninitialized<T>(int length)
         {
-            return GC.AllocateUninitializedArray<T>(length);
+            return GC.AllocateUninitializedArray<T>(length, pinned: true);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]

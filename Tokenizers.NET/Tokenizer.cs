@@ -140,7 +140,7 @@ namespace Tokenizers.NET
     {
         private readonly struct TempFixedAllocator
         {
-            public static readonly int 
+            private static readonly int 
                 PER_BUFFER_SIZE = Encoding.UTF8.GetMaxByteCount(ConfigT.BuiltConfig.ExpectedMaxInputLength.ToSignedUnchecked()),
                 TOTAL_BUFFER_SIZE = PER_BUFFER_SIZE * ConfigT.BuiltConfig.ExpectedMaxBatches.ToSignedUnchecked();
             
@@ -271,7 +271,7 @@ namespace Tokenizers.NET
 
             Unsafe.SkipInit(out NativeMemory<byte> nativeMemory);
 
-            var allocateNative = inputLength > TempFixedAllocator.TOTAL_BUFFER_SIZE;
+            var allocateNative = inputLength > (Config.ExpectedMaxInputLength * Config.ExpectedMaxBatches);
             
             if (!allocateNative)
             {
