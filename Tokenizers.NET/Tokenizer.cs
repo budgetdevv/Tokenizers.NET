@@ -169,8 +169,8 @@ namespace Tokenizers.NET
                 var buffers = Buffers = AllocationHelpers.AllocatePinnedUninitialized<byte>(
                     TOTAL_BUFFER_SIZE
                 );
-                
-                BuffersPtr = (byte*) Unsafe.AsPointer(ref MemoryMarshal.GetArrayDataReference(buffers));
+
+                BuffersPtr = buffers.PinnedArrayToPointer();
 
                 Count = maxExpectedBatches;
                 
