@@ -1,5 +1,4 @@
-﻿using System.Text;
-using Tokenizers.NET;
+﻿using Tokenizers.NET;
 
 namespace Sample
 {
@@ -35,9 +34,9 @@ namespace Sample
             
             ReadOnlySpan<string> inputTexts = 
             [
-                // "Sunset",
-                // "I'm fine, thank you!",
-                // "I love C#!",
+                "Sunset",
+                "I'm fine, thank you!",
+                "I love C#!",
                 GenerateString('H', 2000),
             ];
 
