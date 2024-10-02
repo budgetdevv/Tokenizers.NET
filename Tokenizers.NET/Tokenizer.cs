@@ -448,7 +448,7 @@ namespace Tokenizers.NET
             }
             
             var readonlyU8Strings = new NativeBuffer<NativeBuffer<byte>>(
-                (NativeBuffer<byte>*) u8StringsPtr,
+                u8StringsPtr,
                 numInputs
             );
 
