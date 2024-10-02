@@ -26,33 +26,6 @@ namespace Tests
             FlorenceTokenizer.Dispose();
             OverflowingTokenizer.Dispose();
         }
-
-        private static string AllocateStringWithRandomChars(int length)
-        {
-            var random = new Random((int) DateTime.Now.Ticks);
-            
-            return string.Create(length, length, (charSpan,_ ) =>
-            {
-                for (var i = 0; i < charSpan.Length; i++)
-                {
-                    while (true)
-                    {
-                        // https://www.asciitable.com/
-                        var generatedChar = (char) random.Next(32, 126 + 1);
-                    
-                        // Make sure it doesn't accidentally generate special tokens such as <s>
-                        if (generatedChar is '<' or '>')
-                        {
-                            continue;
-                        }
-                        
-                        charSpan[i] = generatedChar;
-
-                        break;
-                    }
-                }
-            });
-        }
         
         [Test]
         public void EncodeOverflowing()
@@ -75,7 +48,7 @@ namespace Tests
             
             while (true)
             {
-                text = AllocateStringWithRandomChars((int) length);
+                text = TestHelpers.AllocateStringWithRandomChars((int) length);
                 
                 tokenizeResult = tokenizer.Tokenize(text);
                 
@@ -171,7 +144,7 @@ namespace Tests
             
             while (true)
             {
-                text = AllocateStringWithRandomChars((int) length);
+                text = TestHelpers.AllocateStringWithRandomChars((int) length);
                 
                 tokenizeResult = tokenizer.Tokenize(text);
                 
@@ -247,7 +220,7 @@ namespace Tests
             
             var maxManagedLength = config.ExpectedMaxInputLength * config.ExpectedMaxBatches;
             
-            var text = AllocateStringWithRandomChars((int) maxManagedLength);
+            var text = TestHelpers.AllocateStringWithRandomChars((int) maxManagedLength);
 
             const int ITERATIONS = 500;
             
@@ -259,6 +232,48 @@ namespace Tests
             }
         }
         
-        
+        [Test]
+        public void EncodeDecodeBatched()
+        {
+            ref var tokenizer = ref FlorenceTokenizer;
+            
+            var config = tokenizer.Config;
+            
+            var maxBatches = (int) config.ExpectedMaxBatches;
+            
+            var maxInputLength = (int) config.ExpectedMaxInputLength;
+
+            const int ITERATIONS = 500;
+            
+            for (var i = 0; i < ITERATIONS; i++)
+            {
+                var texts = TestHelpers
+                    .GenerateBatch(maxInputLength, maxBatches)
+                    .ToArray();
+                
+                var texts2 = TestHelpers
+                    .GenerateBatch(maxInputLength * 2, maxBatches)
+                    .ToArray();
+
+                var allTexts = texts.Concat(texts2).ToArray();
+                
+                using var tokenizeResults = tokenizer.TokenizeBatch(allTexts);
+
+                var currentIndex = 0;
+                
+                foreach (var tokenizeResult in tokenizeResults.Buffer)
+                {
+                    var ids = tokenizeResult.IDs;
+                    
+                    using var decodeOutput = tokenizer.Decode(ids, skipSpecialTokens: true);
+                    
+                    var decodedText = decodeOutput.ToString();
+                    
+                    decodedText.Should().Be(allTexts[currentIndex++]);
+                    
+                    tokenizeResult.Dispose();
+                }
+            }
+        }
     }
 }

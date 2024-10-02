@@ -36,5 +36,42 @@ namespace Tests
             
             return stringBuilder.ToString();
         }
+        
+        private static readonly Random RANDOM = new();
+
+        public static string AllocateStringWithRandomChars(int length)
+        {
+            var random = RANDOM;
+            
+            return string.Create(length, length, (charSpan, _) =>
+            {
+                for (var i = 0; i < charSpan.Length; i++)
+                {
+                    while (true)
+                    {
+                        // https://www.asciitable.com/
+                        var generatedChar = (char) random.Next(32, 126 + 1);
+                    
+                        // Make sure it doesn't accidentally generate special tokens such as <s>
+                        if (generatedChar is '<' or '>')
+                        {
+                            continue;
+                        }
+                        
+                        charSpan[i] = generatedChar;
+
+                        break;
+                    }
+                }
+            });
+        }
+        
+        public static IEnumerable<string> GenerateBatch(int textLength, int batchSize)
+        {
+            for (var i = 0; i < batchSize; i++)
+            {
+                yield return AllocateStringWithRandomChars(textLength);
+            }
+        }
     }
 }
