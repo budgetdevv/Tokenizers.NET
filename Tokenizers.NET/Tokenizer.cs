@@ -477,7 +477,7 @@ namespace Tokenizers.NET
                 return;
             }
             
-            NativeMemory<NativeBuffer<byte>>.FreeWithPtrUnsafely((NativeBuffer<byte>*) readonlyU8Strings.Ptr);
+            NativeMemory<NativeBuffer<byte>>.FreeWithPtrUnsafely(readonlyU8Strings.Ptr);
         }
         
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
