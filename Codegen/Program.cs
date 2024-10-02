@@ -49,12 +49,25 @@ namespace Codegen
 
         private static void Disasm(Tokenizer<TokenizerConfig> tokenizer, ReadOnlySpan<string> inputs, NativeMemory<TokenizeOutput> outputs)
         {
+            Tokenize_DISASM(tokenizer, inputs[0]);
+            
             TokenizeBatch_DISASM(tokenizer, inputs, outputs);
             
             DisposeTokenizeBatchOutput_DISASM(*outputs.Buffer.Ptr);
         }
         
         private const MethodImplOptions DISASM_METHOD_IMPL_OPTIONS = MethodImplOptions.NoInlining; // | MethodImplOptions.AggressiveOptimization;
+
+        [MethodImpl(DISASM_METHOD_IMPL_OPTIONS)]
+        private static void Tokenize_DISASM(
+            Tokenizer<TokenizerConfig> tokenizer,
+            string input)
+        {
+            tokenizer.TokenizeInternal(
+                input,
+                addSpecialTokens: true
+            );
+        }
         
         [MethodImpl(DISASM_METHOD_IMPL_OPTIONS)]
         private static void TokenizeBatch_DISASM(
