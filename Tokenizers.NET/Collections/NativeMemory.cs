@@ -1,4 +1,6 @@
 using System;
+using System.Collections.Concurrent;
+using System.Diagnostics;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 
@@ -8,6 +10,13 @@ namespace Tokenizers.NET.Collections
     public readonly unsafe struct NativeMemory<T>: IDisposable, IEquatable<NativeMemory<T>>
         where T: unmanaged
     {
+        #if DEBUG
+        // Ptr to size
+        private static readonly ConcurrentDictionary<nint, nuint> LIVE_ALLOCATIONS = new();
+        
+        public static int LiveAllocationsCount => LIVE_ALLOCATIONS.Count;
+        #endif
+        
         public readonly NativeBuffer<T> Buffer;
 
         [Obsolete("Use constructor with parameters.", error: true)]
@@ -19,9 +28,15 @@ namespace Tokenizers.NET.Collections
         [MethodImpl(MethodImplOptions.NoInlining)]
         public NativeMemory(nuint length)
         {
-            var ptr = (T*) NativeMemory.Alloc(length, (nuint) sizeof(T));
+            var size = (nuint) sizeof(T);
+            
+            var ptr = (T*) NativeMemory.Alloc(length, size);
             
             Buffer = new(ptr, length);
+            
+            #if DEBUG
+            Debug.Assert(LIVE_ALLOCATIONS.TryAdd((nint) ptr, size));
+            #endif
         }
         
         // NativeMemory<T> should have the exact same memory layout as NativeBuffer<T>
@@ -44,6 +59,7 @@ namespace Tokenizers.NET.Collections
         {
             return obj is NativeMemory<T> other && Equals(other);
         }
+        
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public override int GetHashCode()
         {
@@ -59,10 +75,23 @@ namespace Tokenizers.NET.Collections
         {
             return !left.Equals(right);
         }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static void FreeWithPtrUnsafely(T* ptr)
+        {
+            #if DEBUG
+            // ReSharper disable once UnusedVariable
+            // We keep the size variable even though it is useless,
+            // so that we can view the size via the debugger!
+            Debug.Assert(LIVE_ALLOCATIONS.TryRemove((nint) ptr, out var size));
+            #endif
+            
+            NativeMemory.Free(ptr);
+        }
         
         public void Dispose()
         {
-            NativeMemory.Free(Buffer.Ptr);
+            FreeWithPtrUnsafely(Buffer.Ptr);
         }
     }
 }
