@@ -69,7 +69,7 @@ namespace Tests
             
             TokenizeOutput tokenizeResult;
             
-            ReadOnlyNativeBuffer<TokenizeOutputOverflowedToken> overflowingTokens;
+            NativeBuffer<TokenizeOutputOverflowedToken> overflowingTokens;
 
             nuint numOverflowingTokensSegments;
             
@@ -138,7 +138,7 @@ namespace Tests
             tokenizeResult.Dispose();
         }
         
-        private static ulong[] WidenSafely(ReadOnlyNativeBuffer<uint> source)
+        private static ulong[] WidenSafely(NativeBuffer<uint> source)
         {
             var sourceSpan = source.AsReadOnlySpan();
             
@@ -165,7 +165,7 @@ namespace Tests
             
             TokenizeOutput tokenizeResult;
             
-            ReadOnlyNativeBuffer<TokenizeOutputOverflowedToken> overflowingTokens;
+            NativeBuffer<TokenizeOutputOverflowedToken> overflowingTokens;
 
             nuint numOverflowingTokensSegments;
             
@@ -258,5 +258,7 @@ namespace Tests
                 tokenizeResult.Dispose();
             }
         }
+        
+        
     }
 }

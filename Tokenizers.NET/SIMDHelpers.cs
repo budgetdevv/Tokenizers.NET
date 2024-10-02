@@ -10,7 +10,7 @@ namespace Tokenizers.NET
 {
     public static unsafe class SIMDHelpers
     {
-        public static NativeMemory<ulong> Widen(this ReadOnlyNativeBuffer<uint> srcBuffer)
+        public static NativeMemory<ulong> Widen(this NativeBuffer<uint> srcBuffer)
         {
             var result = new NativeMemory<ulong>(srcBuffer.Length);
             
@@ -19,19 +19,19 @@ namespace Tokenizers.NET
             return result;
         }
         
-        public static void Widen(this ReadOnlyNativeBuffer<uint> srcBuffer, NativeBuffer<ulong> destBuffer)
+        public static void Widen(this NativeBuffer<uint> srcBuffer, NativeBuffer<ulong> destBuffer)
         {
             srcBuffer.WidenInternal(destBuffer, performLengthCheck: true);
         }
         
-        public static void WidenUnsafely(this ReadOnlyNativeBuffer<uint> srcBuffer, NativeBuffer<ulong> destBuffer)
+        public static void WidenUnsafely(this NativeBuffer<uint> srcBuffer, NativeBuffer<ulong> destBuffer)
         {
             srcBuffer.WidenInternal(destBuffer, performLengthCheck: false);
         }
         
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static void WidenInternal(
-            this ReadOnlyNativeBuffer<uint> srcBuffer,
+            this NativeBuffer<uint> srcBuffer,
             NativeBuffer<ulong> destBuffer,
             bool performLengthCheck)
         {

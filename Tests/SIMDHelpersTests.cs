@@ -46,7 +46,7 @@ namespace Tests
                     slot = (uint) currentIndex++;
                 }
 
-                srcBuffer.Buffer.AsReadOnly().Widen(destBuffer.Buffer);
+                srcBuffer.Buffer.Widen(destBuffer.Buffer);
                 
                 srcSpan.ToArray().Should().BeEquivalentTo(destSpan.ToArray());
             }

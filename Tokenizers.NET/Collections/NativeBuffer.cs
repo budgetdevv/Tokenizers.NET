@@ -39,9 +39,9 @@ namespace Tokenizers.NET.Collections
         }
         
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public ReadOnlyNativeBuffer<T> AsReadOnly()
+        public ReadOnlySpan<T> AsReadOnlySpan()
         {
-            return Unsafe.BitCast<NativeBuffer<T>, ReadOnlyNativeBuffer<T>>(this);
+            return MemoryMarshal.CreateReadOnlySpan(ref *Ptr, (int) Length);
         }
         
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -57,84 +57,6 @@ namespace Tokenizers.NET.Collections
             private readonly T* LastPtrOffsetByOne;
             
             public ref T Current 
-            {
-                [MethodImpl(MethodImplOptions.AggressiveInlining)]
-                get => ref *CurrentPtr;
-            }
-            
-            [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            internal Enumerator(T* ptr, nuint length)
-            {
-                LastPtrOffsetByOne = ptr + length;
-                CurrentPtr = ptr - 1;
-            }
-            
-            [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            public bool MoveNext()
-            {
-                return ++CurrentPtr != LastPtrOffsetByOne;
-            }
-        }
-        
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public Enumerator GetEnumerator()
-        {
-            return new(Ptr, Length);
-        }
-    }
-    
-    [StructLayout(LayoutKind.Sequential)]
-    public readonly unsafe struct ReadOnlyNativeBuffer<T>(T* ptr, nuint length) where T: unmanaged
-    {
-        internal readonly T* Ptr = ptr;
-        public readonly nuint Length = length;
-            
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public ReadOnlyNativeBuffer(T[] pinnedBuffer, nuint length) :
-            this(ref MemoryMarshal.GetArrayDataReference(pinnedBuffer), length)
-        {
-            // Nothing here
-        }
-        
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public ReadOnlyNativeBuffer(ReadOnlySpan<T> pinnedSpan) :
-            this(ref MemoryMarshal.GetReference(pinnedSpan), (nuint) pinnedSpan.Length)
-        {
-            // Nothing here
-        }
-        
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public ReadOnlyNativeBuffer(ref T pinnedStart, nuint length) :
-            this((T*) Unsafe.AsPointer(ref pinnedStart), length)
-        {
-            // Nothing here
-        }
-        
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public ReadOnlySpan<T> AsReadOnlySpan()
-        {
-            return MemoryMarshal.CreateReadOnlySpan(ref *Ptr, (int) Length);
-        }
-        
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public NativeBuffer<T> AsWritable()
-        {
-            return Unsafe.BitCast<ReadOnlyNativeBuffer<T>, NativeBuffer<T>>(this);
-        }
-        
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public ReadOnlyNativeBuffer<F> Cast<F>() where F: unmanaged
-        {
-            return new((F*) Ptr, UnsafeHelpers.CalculateCastLength<T, F>(Length));
-        }
-        
-        public struct Enumerator
-        {
-            private T* CurrentPtr;
-
-            private readonly T* LastPtrOffsetByOne;
-            
-            public readonly ref T Current 
             {
                 [MethodImpl(MethodImplOptions.AggressiveInlining)]
                 get => ref *CurrentPtr;

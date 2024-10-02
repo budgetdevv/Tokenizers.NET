@@ -9,7 +9,7 @@ namespace Tokenizers.NET
     [StructLayout(LayoutKind.Sequential)]
     public readonly struct DecodeOutput: IDisposable
     {
-        public readonly ReadOnlyNativeBuffer<byte> TextBuffer;
+        public readonly NativeBuffer<byte> TextBuffer;
         
         public readonly nint FreeHandle;
         

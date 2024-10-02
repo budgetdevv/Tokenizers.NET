@@ -9,7 +9,7 @@ namespace Tokenizers.NET
         private const string DLL_NAME = "tokenizers_net";
 
         [LibraryImport(DLL_NAME, EntryPoint = "allocate_tokenizer")]
-        public static partial nint AllocateTokenizer(ReadOnlyNativeBuffer<byte> jsonBytes);
+        public static partial nint AllocateTokenizer(NativeBuffer<byte> jsonBytes);
         
         [LibraryImport(DLL_NAME, EntryPoint = "free_tokenizer")]
         public static partial void FreeTokenizer(nint tokenizerHandle);
@@ -17,7 +17,7 @@ namespace Tokenizers.NET
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static TokenizeOutput TokenizerEncode(
             nint tokenizerPtr,
-            ReadOnlyNativeBuffer<byte> textNativeBuffer,
+            NativeBuffer<byte> textNativeBuffer,
             bool addSpecialTokens,
             bool truncate)
         {
@@ -40,7 +40,7 @@ namespace Tokenizers.NET
         [SuppressGCTransition, MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static partial TokenizeOutput TokenizerEncode(
             nint tokenizerPtr,
-            ReadOnlyNativeBuffer<byte> textNativeBuffer,
+            NativeBuffer<byte> textNativeBuffer,
             byte addSpecialTokens
         );
         
@@ -48,14 +48,14 @@ namespace Tokenizers.NET
         [SuppressGCTransition, MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static partial TokenizeOutput TokenizerEncodeNonTruncating(
             nint tokenizerPtr,
-            ReadOnlyNativeBuffer<byte> textNativeBuffer,
+            NativeBuffer<byte> textNativeBuffer,
             byte addSpecialTokens
         );
         
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static void TokenizerEncodeBatch(
             nint tokenizerPtr, 
-            ReadOnlyNativeBuffer<ReadOnlyNativeBuffer<byte>> textNativeBuffers, 
+            NativeBuffer<NativeBuffer<byte>> textNativeBuffers, 
             NativeBuffer<TokenizeOutput> outputNativeBuffer,
             bool addSpecialTokens,
             bool truncate)
@@ -79,7 +79,7 @@ namespace Tokenizers.NET
         [SuppressGCTransition, MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static partial void TokenizerEncodeBatch(
             nint tokenizerPtr, 
-            ReadOnlyNativeBuffer<ReadOnlyNativeBuffer<byte>> textNativeBuffers, 
+            NativeBuffer<NativeBuffer<byte>> textNativeBuffers, 
             NativeBuffer<TokenizeOutput> outputNativeBuffer,
             byte addSpecialTokens
         );
@@ -88,7 +88,7 @@ namespace Tokenizers.NET
         [SuppressGCTransition, MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static partial void TokenizerEncodeBatchNonTruncating(
             nint tokenizerPtr, 
-            ReadOnlyNativeBuffer<ReadOnlyNativeBuffer<byte>> textNativeBuffers, 
+            NativeBuffer<NativeBuffer<byte>> textNativeBuffers, 
             NativeBuffer<TokenizeOutput> outputNativeBuffer,
             byte addSpecialTokens
         );
@@ -96,7 +96,7 @@ namespace Tokenizers.NET
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static DecodeOutput TokenizerDecode(
             nint tokenizerPtr,
-            ReadOnlyNativeBuffer<uint> ids,
+            NativeBuffer<uint> ids,
             bool skipSpecialTokens)
         {
             if (skipSpecialTokens)
@@ -112,11 +112,11 @@ namespace Tokenizers.NET
         
         [LibraryImport(DLL_NAME, EntryPoint = "tokenizer_decode")]
         [SuppressGCTransition, MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static partial DecodeOutput TokenizerDecode(nint tokenizerPtr, ReadOnlyNativeBuffer<uint> idBuffer);
+        private static partial DecodeOutput TokenizerDecode(nint tokenizerPtr, NativeBuffer<uint> idBuffer);
 
         [LibraryImport(DLL_NAME, EntryPoint = "tokenizer_decode_skip_special_tokens")]
         [SuppressGCTransition, MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static partial DecodeOutput TokenizerDecodeSkipSpecialTokens(nint tokenizerPtr, ReadOnlyNativeBuffer<uint> idBuffer);
+        private static partial DecodeOutput TokenizerDecodeSkipSpecialTokens(nint tokenizerPtr, NativeBuffer<uint> idBuffer);
 
         [LibraryImport(DLL_NAME, EntryPoint = "free_with_handle")]
         [SuppressGCTransition, MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -124,6 +124,6 @@ namespace Tokenizers.NET
         
         [LibraryImport(DLL_NAME, EntryPoint = "free_with_multiple_handles")] 
         [SuppressGCTransition, MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static partial void FreeWithMultipleHandles(ReadOnlyNativeBuffer<nint> handles);
+        public static partial void FreeWithMultipleHandles(NativeBuffer<nint> handles);
     }
 }

@@ -8,60 +8,60 @@ namespace Tokenizers.NET
 {
     public interface ITokenizeOutput
     {
-        public ReadOnlyNativeBuffer<uint> IDs { get; }
+        public NativeBuffer<uint> IDs { get; }
         
-        public ReadOnlyNativeBuffer<uint> AttentionMask { get; }
+        public NativeBuffer<uint> AttentionMask { get; }
         
-        public ReadOnlyNativeBuffer<uint> SpecialTokensMask { get; }
+        public NativeBuffer<uint> SpecialTokensMask { get; }
     }
     
     [StructLayout(LayoutKind.Sequential)]
     public readonly struct TokenizeOutputOverflowedToken: ITokenizeOutput
     {
-        public readonly ReadOnlyNativeBuffer<uint> IDs;
+        public readonly NativeBuffer<uint> IDs;
 
-        public readonly ReadOnlyNativeBuffer<uint> AttentionMask;
+        public readonly NativeBuffer<uint> AttentionMask;
 
-        public readonly ReadOnlyNativeBuffer<uint> SpecialTokensMask;
+        public readonly NativeBuffer<uint> SpecialTokensMask;
         
-        ReadOnlyNativeBuffer<uint> ITokenizeOutput.IDs => IDs;
+        NativeBuffer<uint> ITokenizeOutput.IDs => IDs;
         
-        ReadOnlyNativeBuffer<uint> ITokenizeOutput.AttentionMask => AttentionMask;
+        NativeBuffer<uint> ITokenizeOutput.AttentionMask => AttentionMask;
         
-        ReadOnlyNativeBuffer<uint> ITokenizeOutput.SpecialTokensMask => SpecialTokensMask;
+        NativeBuffer<uint> ITokenizeOutput.SpecialTokensMask => SpecialTokensMask;
     }
     
     [StructLayout(LayoutKind.Sequential)]
     public readonly unsafe struct TokenizeOutput: ITokenizeOutput, IDisposable
     {
-        public readonly ReadOnlyNativeBuffer<uint> IDs;
+        public readonly NativeBuffer<uint> IDs;
 
-        public readonly ReadOnlyNativeBuffer<uint> AttentionMask;
+        public readonly NativeBuffer<uint> AttentionMask;
 
-        public readonly ReadOnlyNativeBuffer<uint> SpecialTokensMask;
+        public readonly NativeBuffer<uint> SpecialTokensMask;
 
-        public readonly ReadOnlyNativeBuffer<TokenizeOutputOverflowedToken> OverflowingTokens;
+        public readonly NativeBuffer<TokenizeOutputOverflowedToken> OverflowingTokens;
 
         public readonly nint OriginalOutputFreeHandle;
         
         private readonly nint OverflowingTokensFreeHandle;
         
-        ReadOnlyNativeBuffer<uint> ITokenizeOutput.IDs => IDs;
+        NativeBuffer<uint> ITokenizeOutput.IDs => IDs;
         
-        ReadOnlyNativeBuffer<uint> ITokenizeOutput.AttentionMask => AttentionMask;
+        NativeBuffer<uint> ITokenizeOutput.AttentionMask => AttentionMask;
         
-        ReadOnlyNativeBuffer<uint> ITokenizeOutput.SpecialTokensMask => SpecialTokensMask;
+        NativeBuffer<uint> ITokenizeOutput.SpecialTokensMask => SpecialTokensMask;
         
         private interface IGatherFieldAccessor
         {
-            public static abstract ReadOnlyNativeBuffer<uint> AccessField<T>(T item)
+            public static abstract NativeBuffer<uint> AccessField<T>(T item)
                 where T: struct, ITokenizeOutput;
         }
 
         private struct AccessIDs: IGatherFieldAccessor
         {
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            public static ReadOnlyNativeBuffer<uint> AccessField<T>(T item)
+            public static NativeBuffer<uint> AccessField<T>(T item)
                 where T: struct, ITokenizeOutput
             {
                 return item.IDs;
@@ -71,7 +71,7 @@ namespace Tokenizers.NET
         private struct AccessAttentionMask: IGatherFieldAccessor
         {
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            public static ReadOnlyNativeBuffer<uint> AccessField<T>(T item)
+            public static NativeBuffer<uint> AccessField<T>(T item)
                 where T: struct, ITokenizeOutput
             {
                 return item.AttentionMask;
@@ -81,7 +81,7 @@ namespace Tokenizers.NET
         private struct AccessSpecialTokensMask: IGatherFieldAccessor
         {
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            public static ReadOnlyNativeBuffer<uint> AccessField<T>(T item)
+            public static NativeBuffer<uint> AccessField<T>(T item)
                 where T: struct, ITokenizeOutput
             {
                 return item.SpecialTokensMask;

@@ -1,8 +1,8 @@
 using System.Text;
 
-namespace Sample
+namespace Tests
 {
-    public static class DebugHelpers
+    public static class TestHelpers
     {
         public static string GetSpanPrintString<T>(this Span<T> span)
         {

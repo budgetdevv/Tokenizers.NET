@@ -296,7 +296,7 @@ namespace Tokenizers.NET
             
             var expectedMaxBatches = config.ExpectedMaxBatches;
             
-            var rawTokenizerData = config.RawTokenizerData.Buffer.AsReadOnly();
+            var rawTokenizerData = config.RawTokenizerData.Buffer;
             
             var u8StringBuffers = U8StringBuffers = AllocationHelpers.AllocatePinnedUninitialized<NativeBuffer<byte>>(
                 expectedMaxBatches
@@ -340,7 +340,7 @@ namespace Tokenizers.NET
 
             var bytesWritten = Encoding.UTF8.GetBytes(input, allocation.AsSpan());
             
-            var u8String = new ReadOnlyNativeBuffer<byte>(allocation.Ptr, (nuint) bytesWritten);
+            var u8String = new NativeBuffer<byte>(allocation.Ptr, (nuint) bytesWritten);
             
             var result = TokenizerNativeMethods.TokenizerEncode(
                 TokenizerHandle, 
@@ -447,8 +447,8 @@ namespace Tokenizers.NET
                 currentU8String++;
             }
             
-            var readonlyU8Strings = new ReadOnlyNativeBuffer<ReadOnlyNativeBuffer<byte>>(
-                (ReadOnlyNativeBuffer<byte>*) u8StringsPtr,
+            var readonlyU8Strings = new NativeBuffer<NativeBuffer<byte>>(
+                (NativeBuffer<byte>*) u8StringsPtr,
                 numInputs
             );
 
@@ -466,7 +466,7 @@ namespace Tokenizers.NET
 
             foreach (var buffer in readonlyU8Strings)
             {
-                if (!allocator.IsManagedAllocation(buffer.AsWritable()))
+                if (!allocator.IsManagedAllocation(buffer))
                 {
                     NativeMemory<byte>.FreeWithPtrUnsafely(buffer.Ptr);
                 }
@@ -487,12 +487,12 @@ namespace Tokenizers.NET
             
             fixed(uint* ptr = &first)
             {
-                return Decode((ReadOnlyNativeBuffer<uint>) new(ptr, (nuint) ids.Length), skipSpecialTokens);
+                return Decode((NativeBuffer<uint>) new(ptr, (nuint) ids.Length), skipSpecialTokens);
             }
         }
         
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public DecodeOutput Decode(ReadOnlyNativeBuffer<uint> ids, bool skipSpecialTokens)
+        public DecodeOutput Decode(NativeBuffer<uint> ids, bool skipSpecialTokens)
         {
             var tokenizerHandle = TokenizerHandle;
             
@@ -514,7 +514,7 @@ namespace Tokenizers.NET
         {
             var tokenizerHandle = TokenizerHandle;
 
-            var mutated = ids.NarrowMutating().AsReadOnly();
+            var mutated = ids.NarrowMutating();
             
             // The length should still be the same, even though the actual underlying length is double
             mutated = new(mutated.Ptr, ids.Length);
