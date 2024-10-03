@@ -22,7 +22,7 @@ namespace Tokenizers.NET
         
         public interface IConfig
         {
-            public static abstract BuiltConfig BuiltConfig { get; }
+            public static abstract ConfigBuilder ConfigBuilder { get; }
         }
 
         public struct ConfigBuilder
@@ -83,7 +83,7 @@ namespace Tokenizers.NET
                 return ref this;
             }
             
-            public BuiltConfig Build()
+            internal BuiltConfig Build()
             {
                 return new(this);
             }
@@ -136,7 +136,7 @@ namespace Tokenizers.NET
         
         internal static class BuiltConfigCache<ConfigT> where ConfigT: struct, IConfig
         {
-            public static readonly BuiltConfig BUILT_CONFIG = ConfigT.BuiltConfig;
+            public static readonly BuiltConfig BUILT_CONFIG = ConfigT.ConfigBuilder.Build();
         }
     }
     

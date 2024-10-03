@@ -12,14 +12,13 @@ namespace Codegen
     {
         private struct TokenizerConfig: Tokenizer.IConfig
         {
-            public static Tokenizer.BuiltConfig BuiltConfig =>
+            public static Tokenizer.ConfigBuilder ConfigBuilder =>
                 new Tokenizer.ConfigBuilder()
                     .SetExpectedMaxInputLength(512)
                     .SetExpectedMaxBatches(16)
                     .SetExceedExpectedMaxBatchesBehavior(Tokenizer.ExceedExpectedMaxBatchesBehavior.AllocateBuffer)
                     // .SetTokenizerJsonPath("FlorenceTokenizer.json")
-                    .SetRawTokenizerData(new HttpClient().GetByteArrayAsync("https://raw.githubusercontent.com/budgetdevv/Tokenizers.NET/refs/heads/main/SampleTokenizers/FlorenceTokenizer.json").Result)
-                    .Build();
+                    .SetRawTokenizerData(new HttpClient().GetByteArrayAsync("https://raw.githubusercontent.com/budgetdevv/Tokenizers.NET/refs/heads/main/SampleTokenizers/FlorenceTokenizer.json").Result);
         }
         
         static void Main(string[] args)

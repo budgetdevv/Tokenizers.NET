@@ -6,24 +6,22 @@ namespace Tests
     {
         public struct FlorenceTokenizer: Tokenizer.IConfig
         {
-            public static Tokenizer.BuiltConfig BuiltConfig =>
+            public static Tokenizer.ConfigBuilder ConfigBuilder =>
                 new Tokenizer.ConfigBuilder()
                     .SetExpectedMaxBatches(16)
                     .SetExpectedMaxInputLength(1024)
                     .SetExceedExpectedMaxBatchesBehavior(Tokenizer.ExceedExpectedMaxBatchesBehavior.AllocateBuffer)
-                    .SetTokenizerJsonPath("FlorenceTokenizer.json")
-                    .Build();
+                    .SetTokenizerJsonPath("FlorenceTokenizer.json");
         }
         
         public struct OverflowingTokenizer: Tokenizer.IConfig
         {
-            public static Tokenizer.BuiltConfig BuiltConfig =>
+            public static Tokenizer.ConfigBuilder ConfigBuilder =>
                 new Tokenizer.ConfigBuilder()
                     .SetExpectedMaxBatches(16)
                     .SetExpectedMaxInputLength(384)
                     .SetExceedExpectedMaxBatchesBehavior(Tokenizer.ExceedExpectedMaxBatchesBehavior.AllocateBuffer)
-                    .SetTokenizerJsonPath("OverflowingTokenizer.json")
-                    .Build();
+                    .SetTokenizerJsonPath("OverflowingTokenizer.json");
         }
     }
 }
