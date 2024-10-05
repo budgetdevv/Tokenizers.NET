@@ -10,6 +10,12 @@ namespace Tokenizers.NET.Collections
     {
         public readonly T* Ptr = ptr;
         public readonly nuint Length = length;
+
+        [Obsolete("Use constructor with parameters.", error: true)]
+        public NativeBuffer(): this((T*) null, 0)
+        {
+            throw new NotSupportedException("Use constructor with parameters.");
+        }
        
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public NativeBuffer(T[] pinnedBuffer, nuint length) :
