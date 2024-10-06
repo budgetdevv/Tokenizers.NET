@@ -1,8 +1,10 @@
 using System;
-using System.Diagnostics;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using Tokenizers.NET.Collections;
+#if DEBUG
+using System.Diagnostics;
+#endif
 
 namespace Tokenizers.NET
 {
@@ -37,8 +39,8 @@ namespace Tokenizers.NET
         NativeBuffer<uint> ITokenizeOutput.TokenTypeIDs => TokenTypeIDs;
     }
     
-    [StructLayout(LayoutKind.Sequential)]
-    public readonly unsafe struct TokenizeOutput: ITokenizeOutput, IDisposable
+    [StructLayout(LayoutKind.Sequential)] // Data structures
+    public readonly unsafe partial struct TokenizeOutput: ITokenizeOutput, IDisposable
     {
         public readonly NativeBuffer<uint> IDs;
 
@@ -107,7 +109,11 @@ namespace Tokenizers.NET
                 return item.TokenTypeIDs;
             }
         }
-
+    }
+    
+    // Gather APIs
+    public readonly unsafe partial struct TokenizeOutput
+    {
         public void GatherIDsInclusiveOfOverflowing(
             NativeBuffer<uint> idsBuffer,
             out nuint totalLength)
@@ -250,7 +256,11 @@ namespace Tokenizers.NET
                 return;
             }
         }
+    }
 
+    // Gather and Widen APIs
+    public readonly unsafe partial struct TokenizeOutput
+    {
         public void GatherAndWidenIDsInclusiveOfOverflowing(
             NativeBuffer<ulong> idsBuffer, 
             out nuint totalLength)
@@ -393,7 +403,11 @@ namespace Tokenizers.NET
                 return;
             }
         }
+    }
 
+    // Dispose
+    public readonly unsafe partial struct TokenizeOutput
+    {
         private const int NUM_HANDLES = 2;
         
         [InlineArray(NUM_HANDLES)]
