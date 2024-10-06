@@ -9,7 +9,6 @@ namespace Tests
     {
         private Tokenizer<Configs.FlorenceTokenizer> FlorenceTokenizer;
         
-        // What if Rust code doesn't change?
         [SetUp]
         public void Setup()
         {
