@@ -156,6 +156,7 @@ pub struct TokenizeOutput
     pub ids: NativeBuffer<u32>,
     pub attention_mask: NativeBuffer<u32>,
     pub special_tokens_mask: NativeBuffer<u32>,
+    pub token_type_ids: NativeBuffer<u32>,
     pub overflowing_tokens: NativeBuffer<TokenizeOutputOverflowedToken>,
     pub original_output_free_handle: *const DropHandle<Encoding>,
     pub overflowing_tokens_free_handle: *const DropHandle<Vec<TokenizeOutputOverflowedToken>>,
@@ -171,6 +172,7 @@ impl TokenizeOutput
         let ids = NativeBuffer::from_slice(encoded_tokens.get_ids());
         let attention_mask = NativeBuffer::from_slice(encoded_tokens.get_attention_mask());
         let special_tokens_mask = NativeBuffer::from_slice(encoded_tokens.get_special_tokens_mask());
+        let token_type_ids = NativeBuffer::from_slice(encoded_tokens.get_type_ids());
 
         let overflowing_tokens_slice = encoded_tokens.get_overflowing();
 
@@ -209,6 +211,7 @@ impl TokenizeOutput
             ids,
             attention_mask,
             special_tokens_mask,
+            token_type_ids,
             overflowing_tokens,
             original_output_free_handle,
             overflowing_tokens_free_handle,
@@ -222,6 +225,7 @@ pub struct TokenizeOutputOverflowedToken
     pub ids: NativeBuffer<u32>,
     pub attention_mask: NativeBuffer<u32>,
     pub special_tokens_mask: NativeBuffer<u32>,
+    pub token_type_ids: NativeBuffer<u32>,
 }
 
 impl TokenizeOutputOverflowedToken
@@ -232,12 +236,14 @@ impl TokenizeOutputOverflowedToken
         let ids = NativeBuffer::from_slice(encoded_tokens.get_ids());
         let attention_mask = NativeBuffer::from_slice(encoded_tokens.get_attention_mask());
         let special_tokens_mask = NativeBuffer::from_slice(encoded_tokens.get_special_tokens_mask());
+        let token_type_ids = NativeBuffer::from_slice(encoded_tokens.get_type_ids());
 
         return TokenizeOutputOverflowedToken
         {
             ids,
             attention_mask,
             special_tokens_mask,
+            token_type_ids,
         };
     }
 }

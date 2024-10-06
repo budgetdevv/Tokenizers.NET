@@ -11,7 +11,7 @@ namespace Sample
                     .SetExpectedMaxBatches(1024)
                     .SetExpectedMaxInputLength(16)
                     .SetExceedExpectedMaxBatchesBehavior(Tokenizer.ExceedExpectedMaxBatchesBehavior.AllocateBuffer)
-                    .SetTokenizerJsonPath("FlorenceTokenizer.json");
+                    .SetTokenizerJsonPath("OverflowingTokenizer.json");
         }
 
         private static string GenerateString(char val, int length)
@@ -33,10 +33,10 @@ namespace Sample
             
             ReadOnlySpan<string> inputTexts = 
             [
-                "Sunset",
-                "I'm fine, thank you!",
-                "I love C#!",
-                GenerateString('H', 2000),
+                // "Sunset",
+                // "I'm fine, thank you!",
+                // "I love C#!",
+                GenerateString('H', 5000),
             ];
 
             var outputs = tokenizer.TokenizeBatch(inputTexts);
@@ -47,7 +47,7 @@ namespace Sample
             
             foreach (var token in outputSpan)
             {
-                const bool TEST_OVERFLOW = false;
+                const bool TEST_OVERFLOW = true;
                 
                 if (TEST_OVERFLOW)
                 {
@@ -57,7 +57,13 @@ namespace Sample
                     {
                         Console.WriteLine(
                         $"""
-                        Overflow {overflowIndex}: {overflow.IDs.AsReadOnlySpan().GetSpanPrintString()}
+                        Overflow IDs {overflowIndex}: {overflow.IDs.AsReadOnlySpan().GetSpanPrintString()}
+                        
+                        Overflow Attention Mask {overflowIndex}: {overflow.AttentionMask.AsReadOnlySpan().GetSpanPrintString()}
+                        
+                        Overflow Special Tokens Mask {overflowIndex}: {overflow.SpecialTokensMask.AsReadOnlySpan().GetSpanPrintString()}
+                        
+                        Overflow Token Type IDs {overflowIndex}: {overflow.TokenTypeIDs.AsReadOnlySpan().GetSpanPrintString()}
                         
                         Overflow {overflowIndex} length: {overflow.IDs.Length}
                         
@@ -78,6 +84,10 @@ namespace Sample
                 Input IDs Widen: {tokenIDs.Widen().Buffer.AsSpan().GetSpanPrintString()}
                 
                 Attention Mask: {token.AttentionMask.AsReadOnlySpan().GetSpanPrintString()}
+                
+                Special Tokens Mask: {token.SpecialTokensMask.AsReadOnlySpan().GetSpanPrintString()}
+                
+                Token Type IDs: {token.TokenTypeIDs.AsReadOnlySpan().GetSpanPrintString()}
                 
                 Input IDs Length: {token.IDs.Length}
                 
@@ -101,7 +111,7 @@ namespace Sample
             
             outputs.Dispose();
 
-            const bool TEST_SINGLE_TOKENIZE = true;
+            const bool TEST_SINGLE_TOKENIZE = false;
             
             if (TEST_SINGLE_TOKENIZE)
             {

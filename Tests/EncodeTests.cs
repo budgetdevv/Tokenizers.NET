@@ -80,6 +80,7 @@ namespace Tests
                 overflowingIDs.Length.Should().Be(expectedMaxInputLength);
                 overflowingToken.AttentionMask.Length.Should().Be(expectedMaxInputLength);
                 overflowingToken.SpecialTokensMask.Length.Should().Be(expectedMaxInputLength);
+                overflowingToken.TokenTypeIDs.Length.Should().Be(expectedMaxInputLength);
                 
                 ids.AddRange(overflowingIDs.AsReadOnlySpan());
 
@@ -166,6 +167,7 @@ namespace Tests
             var ids = new List<ulong>(expectedTotalIDLength);
             var attentionMask = new List<ulong>(expectedTotalIDLength);
             var specialTokensMask = new List<ulong>(expectedTotalIDLength);
+            var tokenTypeIDs = new List<ulong>(expectedTotalIDLength);
             
             ids.AddRange(WidenSafely(tokenizeResult.IDs));
             
@@ -173,40 +175,50 @@ namespace Tests
             
             specialTokensMask.AddRange(WidenSafely(tokenizeResult.SpecialTokensMask));
             
+            tokenTypeIDs.AddRange(WidenSafely(tokenizeResult.TokenTypeIDs));
+            
             foreach (var overflowingToken in overflowingTokens.AsReadOnlySpan())
             {
                 var overflowingIDs = overflowingToken.IDs;
                 var overflowingAttentionMask = overflowingToken.AttentionMask;
                 var overflowingSpecialTokensMask = overflowingToken.SpecialTokensMask;
+                var overflowingTokenTypeIDs = overflowingToken.TokenTypeIDs;
                 
                 overflowingIDs.Length.Should().Be(expectedMaxInputLength);
                 overflowingAttentionMask.Length.Should().Be(expectedMaxInputLength);
                 overflowingSpecialTokensMask.Length.Should().Be(expectedMaxInputLength);
+                overflowingTokenTypeIDs.Length.Should().Be(expectedMaxInputLength);
                 
                 ids.AddRange(WidenSafely(overflowingIDs));
                 attentionMask.AddRange(WidenSafely(overflowingAttentionMask));
                 specialTokensMask.AddRange(WidenSafely(overflowingSpecialTokensMask));
+                tokenTypeIDs.AddRange(WidenSafely(overflowingTokenTypeIDs));
             }
             
             ids.Count.Should().Be(expectedTotalIDLength);
             attentionMask.Count.Should().Be(expectedTotalIDLength);
             specialTokensMask.Count.Should().Be(expectedTotalIDLength);
+            tokenTypeIDs.Count.Should().Be(expectedTotalIDLength);
             
             var idsSpan = CollectionsMarshal.AsSpan(ids);
             var attentionMaskSpan = CollectionsMarshal.AsSpan(attentionMask);
             var specialTokensMaskSpan = CollectionsMarshal.AsSpan(specialTokensMask);
+            var tokenTypeIDsSpan = CollectionsMarshal.AsSpan(tokenTypeIDs);
 
             using var idGatherResult = tokenizeResult.GatherAndWidenIDsInclusiveOfOverflowing();
             using var attentionMaskGatherResult = tokenizeResult.GatherAndWidenAttentionMaskInclusiveOfOverflowing();
             using var specialTokensMaskGatherResult = tokenizeResult.GatherAndWidenSpecialTokensMaskInclusiveOfOverflowing();
+            using var tokenTypeIDsGatherResult = tokenizeResult.GatherAndWidenTokenTypeIDsInclusiveOfOverflowing();
             
             var gatheredIDs = idGatherResult.Buffer.AsSpan();
             var gatheredAttentionMask = attentionMaskGatherResult.Buffer.AsSpan();
             var gatheredSpecialTokensMask = specialTokensMaskGatherResult.Buffer.AsSpan();
+            var gatheredTokenTypeIDs = tokenTypeIDsGatherResult.Buffer.AsSpan();
             
             gatheredIDs.SequenceEqual(idsSpan).Should().BeTrue();
             gatheredAttentionMask.SequenceEqual(attentionMaskSpan).Should().BeTrue();
             gatheredSpecialTokensMask.SequenceEqual(specialTokensMaskSpan).Should().BeTrue();
+            gatheredTokenTypeIDs.SequenceEqual(tokenTypeIDsSpan).Should().BeTrue();
             
             tokenizeResult.Dispose();
         }

@@ -13,6 +13,8 @@ namespace Tokenizers.NET
         public NativeBuffer<uint> AttentionMask { get; }
         
         public NativeBuffer<uint> SpecialTokensMask { get; }
+        
+        public NativeBuffer<uint> TokenTypeIDs { get; } 
     }
     
     [StructLayout(LayoutKind.Sequential)]
@@ -24,11 +26,15 @@ namespace Tokenizers.NET
 
         public readonly NativeBuffer<uint> SpecialTokensMask;
         
+        public readonly NativeBuffer<uint> TokenTypeIDs;
+        
         NativeBuffer<uint> ITokenizeOutput.IDs => IDs;
         
         NativeBuffer<uint> ITokenizeOutput.AttentionMask => AttentionMask;
         
         NativeBuffer<uint> ITokenizeOutput.SpecialTokensMask => SpecialTokensMask;
+        
+        NativeBuffer<uint> ITokenizeOutput.TokenTypeIDs => TokenTypeIDs;
     }
     
     [StructLayout(LayoutKind.Sequential)]
@@ -40,6 +46,8 @@ namespace Tokenizers.NET
 
         public readonly NativeBuffer<uint> SpecialTokensMask;
 
+        public readonly NativeBuffer<uint> TokenTypeIDs;
+        
         public readonly NativeBuffer<TokenizeOutputOverflowedToken> OverflowingTokens;
 
         public readonly nint OriginalOutputFreeHandle;
@@ -51,6 +59,8 @@ namespace Tokenizers.NET
         NativeBuffer<uint> ITokenizeOutput.AttentionMask => AttentionMask;
         
         NativeBuffer<uint> ITokenizeOutput.SpecialTokensMask => SpecialTokensMask;
+        
+        NativeBuffer<uint> ITokenizeOutput.TokenTypeIDs => TokenTypeIDs;
         
         private interface IGatherFieldAccessor
         {
@@ -85,6 +95,16 @@ namespace Tokenizers.NET
                 where T: struct, ITokenizeOutput
             {
                 return item.SpecialTokensMask;
+            }
+        }
+        
+        private struct AccessTokenTypeIDs: IGatherFieldAccessor
+        {
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            public static NativeBuffer<uint> AccessField<T>(T item)
+                where T: struct, ITokenizeOutput
+            {
+                return item.TokenTypeIDs;
             }
         }
 
@@ -158,6 +178,30 @@ namespace Tokenizers.NET
             );
             
             return specialTokensMaskBuffer;
+        }
+        
+        public void GatherTokenTypeIDsInclusiveOfOverflowing(
+            NativeBuffer<uint> tokenTypeIDsBuffer,
+            out nuint totalLength)
+        {
+            GatherIDsInclusiveOfOverflowingCore<AccessTokenTypeIDs>(
+                tokenTypeIDsBuffer,
+                performRangeCheck: true,
+                out totalLength
+            );
+        }
+        
+        public NativeMemory<uint> GatherTokenTypeIDsInclusiveOfOverflowing()
+        {
+            var tokenTypeIDsBuffer = new NativeMemory<uint>(TokenTypeIDs.Length * (OverflowingTokens.Length + 1));
+            
+            GatherIDsInclusiveOfOverflowingCore<AccessTokenTypeIDs>(
+                tokenTypeIDsBuffer.Buffer,
+                performRangeCheck: false,
+                out _
+            );
+            
+            return tokenTypeIDsBuffer;
         }
         
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -277,6 +321,30 @@ namespace Tokenizers.NET
             );
             
             return specialTokensMaskBuffer;
+        }
+        
+        public void GatherAndWidenTokenTypeIDsInclusiveOfOverflowing(
+            NativeBuffer<ulong> tokenTypeIDsBuffer,
+            out nuint totalLength)
+        {
+            GatherAndWidenIDsInclusiveOfOverflowingCore<AccessTokenTypeIDs>(
+                tokenTypeIDsBuffer,
+                performRangeCheck: true,
+                out totalLength
+            );
+        }
+        
+        public NativeMemory<ulong> GatherAndWidenTokenTypeIDsInclusiveOfOverflowing()
+        {
+            var tokenTypeIDsBuffer = new NativeMemory<ulong>(TokenTypeIDs.Length * (OverflowingTokens.Length + 1));
+            
+            GatherAndWidenIDsInclusiveOfOverflowingCore<AccessTokenTypeIDs>(
+                tokenTypeIDsBuffer.Buffer,
+                performRangeCheck: false,
+                out _
+            );
+            
+            return tokenTypeIDsBuffer;
         }
         
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
