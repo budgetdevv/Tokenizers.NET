@@ -26,11 +26,21 @@ namespace Tokenizers.NET.Collections
         }
         
         [MethodImpl(MethodImplOptions.NoInlining)]
-        public NativeMemory(nuint length)
+        public NativeMemory(nuint length, bool zeroed = false)
         {
             var size = (nuint) sizeof(T);
-            
-            var ptr = (T*) NativeMemory.Alloc(length, size);
+
+            T* ptr;
+
+            if (!zeroed)
+            {
+                ptr = (T*) NativeMemory.Alloc(length, size);
+            }
+
+            else
+            {
+                ptr = (T*) NativeMemory.AllocZeroed(length, size);
+            }
             
             Buffer = new(ptr, length);
             
