@@ -1,3 +1,4 @@
+using System.Text;
 using Allure.NUnit;
 using FluentAssertions;
 using Tokenizers.NET;
@@ -105,6 +106,34 @@ namespace Tests
                 var x = decodeOutput.ToString();
                 
                 x.Should().Be(text);
+            }
+        }
+
+        [Test]
+        public void IDsToTokens()
+        {
+            ref var tokenizer = ref FlorenceTokenizer;
+            
+            const nuint MAX_VALUE = 500;
+            
+            var stringBuilder = new StringBuilder();
+            
+            for (nuint i = 1; i <= MAX_VALUE; i++)
+            {
+                var text = AllocateStringWithRandomChars((int) i);
+                
+                using var tokenizeResult = tokenizer.Tokenize(text, addSpecialTokens: false);
+                
+                var tokens = tokenizer.IDsToTokens(tokenizeResult.IDs);
+                
+                foreach (var token in tokens)
+                {
+                    stringBuilder.Append(token.Replace('Ġ', ' '));
+                }
+                
+                stringBuilder.ToString().Should().Be(text);
+                
+                stringBuilder.Clear();
             }
         }
     }

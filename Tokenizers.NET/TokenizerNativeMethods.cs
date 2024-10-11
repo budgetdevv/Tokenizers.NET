@@ -1,6 +1,7 @@
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using Tokenizers.NET.Collections;
+using Tokenizers.NET.Outputs;
 
 namespace Tokenizers.NET
 {
@@ -118,6 +119,14 @@ namespace Tokenizers.NET
         [LibraryImport(DLL_NAME, EntryPoint = "tokenizer_decode_skip_special_tokens")]
         private static partial DecodeOutput TokenizerDecodeSkipSpecialTokens(nint tokenizerPtr, NativeBuffer<uint> idBuffer);
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [LibraryImport(DLL_NAME, EntryPoint = "ids_to_tokens")]
+        public static partial nint IDsToTokens(
+            nint tokenizerPtr,
+            NativeBuffer<uint> idBuffer,
+            NativeBuffer<NativeBuffer<byte>> tokenBuffer
+        );
+        
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         [LibraryImport(DLL_NAME, EntryPoint = "free_with_handle")]
         public static partial void FreeWithHandle(nint handle);

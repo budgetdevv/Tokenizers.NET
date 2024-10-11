@@ -47,7 +47,7 @@ namespace Sample
             
             foreach (var token in outputSpan)
             {
-                const bool TEST_OVERFLOW = true;
+                const bool TEST_OVERFLOW = false;
                 
                 if (TEST_OVERFLOW)
                 {

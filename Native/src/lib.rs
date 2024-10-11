@@ -1,9 +1,9 @@
+use std::string::String;
 use std::marker::PhantomData;
 use std::ptr::{ null, null_mut };
 use std::slice;
 use tokenizers::tokenizer::Tokenizer;
 use tokenizers::Encoding;
-
 // #[inline(always)] is used aggressively - Realistically we only have a few callsites.
 
 #[repr(C)]
@@ -443,6 +443,34 @@ pub unsafe extern "C" fn tokenizer_decode_core(
     let text = tokenizer.decode(id_buffer.as_slice(), skip_special_tokens).unwrap();
 
     return DecodeOutput::from_text(text);
+}
+
+#[no_mangle]
+#[inline(always)]
+pub unsafe extern "C" fn ids_to_tokens(
+    tokenizer_ptr: *mut Tokenizer,
+    id_buffer: NativeBuffer<u32>,
+    token_buffer: NativeBuffer<NativeBuffer<u8>>)
+    -> *mut DropHandle<Vec<String>>
+{
+    let tokenizer = &*tokenizer_ptr;
+
+    let mut token_buffers = Vec::with_capacity(id_buffer.length);
+
+    let mut current_token_ptr = token_buffer.ptr.mutable;
+
+    for id in id_buffer.as_slice()
+    {
+        let mut token = tokenizer.id_to_token(*id).unwrap();
+
+        *current_token_ptr = NativeBuffer::from_mutable_vec(token.as_mut_vec());
+
+        current_token_ptr = current_token_ptr.add(1);
+
+        token_buffers.push(token);
+    }
+
+    return DropHandle::from_value_and_allocate_box(token_buffers);
 }
 
 #[no_mangle]

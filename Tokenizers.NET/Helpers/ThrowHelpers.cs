@@ -32,5 +32,11 @@ namespace Tokenizers.NET.Helpers
         {
             throw new InvalidOperationException("Too many bytes. The resulting number of chars is larger than what can be returned as an int.");
         }
+
+        [DoesNotReturn]
+        public static void IDsToTokens_LengthCheckFailed()
+        {
+            throw new ArgumentException("Output Span / Buffer length must be more than or equal to the input length.");
+        }
     }
 }

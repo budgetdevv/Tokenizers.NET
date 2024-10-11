@@ -5,6 +5,7 @@ using System.Runtime.CompilerServices;
 using System.Threading;
 using Tokenizers.NET;
 using Tokenizers.NET.Collections;
+using Tokenizers.NET.Outputs;
 
 namespace Codegen
 {

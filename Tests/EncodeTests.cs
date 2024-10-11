@@ -3,6 +3,7 @@ using Allure.NUnit;
 using FluentAssertions;
 using Tokenizers.NET;
 using Tokenizers.NET.Collections;
+using Tokenizers.NET.Outputs;
 
 namespace Tests
 {

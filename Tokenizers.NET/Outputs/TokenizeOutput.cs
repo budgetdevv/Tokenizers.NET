@@ -2,11 +2,8 @@ using System;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using Tokenizers.NET.Collections;
-#if DEBUG
-using System.Diagnostics;
-#endif
 
-namespace Tokenizers.NET
+namespace Tokenizers.NET.Outputs
 {
     public interface ITokenizeOutput
     {

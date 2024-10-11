@@ -9,6 +9,7 @@ using System.Text.Json;
 using Tokenizers.NET.Collections;
 using Tokenizers.NET.Enumerators;
 using Tokenizers.NET.Helpers;
+using Tokenizers.NET.Outputs;
 
 namespace Tokenizers.NET
 {
@@ -171,15 +172,28 @@ namespace Tokenizers.NET
 
             private readonly int Count;
 
+            // Modern cacheline size is either 64 or 128 bytes,
+            // reducing cross-cacheline reads for SIMD instructions.
+            // This should also satisfy the alignment for NativeBuffer<NativeBuffer<byte>>,
+            // enabling us to reinterpret the memory in IDsToTokens() to avoid allocation.
+            private const int ALIGNMENT = 128;
+
+            static TempFixedAllocator()
+            {
+                Debug.Assert(ALIGNMENT % sizeof(NativeBuffer<NativeBuffer<byte>>) == 0);
+            }
+            
             public TempFixedAllocator()
             {
                 var maxExpectedBatches = Config.ExpectedMaxBatches.ToSignedUnchecked();
                 
-                var buffers = Buffers = AllocationHelpers.AllocatePinnedUninitialized<byte>(
-                    TOTAL_BUFFER_SIZE
+                var buffers = Buffers = AllocationHelpers.AllocatePinnedUninitializedAligned<byte>(
+                    TOTAL_BUFFER_SIZE,
+                    ALIGNMENT,
+                    out var buffersPtr
                 );
 
-                BuffersPtr = buffers.PinnedArrayToPointer();
+                BuffersPtr = buffersPtr;
 
                 Count = maxExpectedBatches;
                 
@@ -524,6 +538,88 @@ namespace Tokenizers.NET
                 mutated,
                 skipSpecialTokens
             );
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public FreeHandle IDsToTokens(NativeBuffer<uint> ids, Span<NativeBuffer<byte>> u8Strings)
+        {
+            fixed (NativeBuffer<byte>* ptr = &MemoryMarshal.GetReference(u8Strings))
+            {
+                var u8StringsBuffer = new NativeBuffer<NativeBuffer<byte>>(ptr, (nuint) u8Strings.Length);
+                
+                return IDsToTokens(ids, u8StringsBuffer);
+            }
+        }
+        
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public FreeHandle IDsToTokens(
+            NativeBuffer<uint> ids,
+            NativeBuffer<NativeBuffer<byte>> tokens,
+            bool performSizeCheck = true)
+        {
+            if (performSizeCheck && tokens.Length < ids.Length)
+            {
+                ThrowHelpers.IDsToTokens_LengthCheckFailed();
+            }
+            
+            var tokenizerHandle = TokenizerHandle;
+
+            return new(TokenizerNativeMethods.IDsToTokens(tokenizerHandle, ids, tokens));
+        }
+        
+        public string[] IDsToTokens(NativeBuffer<uint> ids)
+        {
+            var tokens = new string[ids.Length];
+            
+            IDsToTokens(ids, tokens, performSizeCheck: false);
+            
+            return tokens;
+        }
+        
+        public void IDsToTokens(NativeBuffer<uint> ids, Span<string> tokens, bool performSizeCheck = true)
+        {
+            var inputLength = ids.Length;
+            
+            if (performSizeCheck && (nuint) tokens.Length < inputLength)
+            {
+                ThrowHelpers.IDsToTokens_LengthCheckFailed();
+            }
+
+            var allocationSizeInBytes = (int) inputLength * sizeof(NativeBuffer<NativeBuffer<byte>>);
+
+            var allocateNative = allocationSizeInBytes > (Config.ExpectedMaxInputLength * Config.ExpectedMaxBatches);
+            
+            NativeBuffer<NativeBuffer<byte>> allocation;
+            
+            if (!allocateNative)
+            {
+                var ptr = Allocator.GetFullAllocationUnsafely().Ptr;
+                
+                allocation = new((NativeBuffer<byte>*) ptr, inputLength);
+            }
+
+            else
+            {
+                allocation = new NativeMemory<NativeBuffer<byte>>(inputLength).Buffer;
+            }
+            
+            using var freeHandle = IDsToTokens(ids, allocation, performSizeCheck: false);
+
+            ref var currentToken = ref MemoryMarshal.GetReference(tokens);
+            
+            foreach (var buffer in allocation)
+            {
+                // In theory, we could intern the tokenizer's vocab and greatly reduce string allocs,
+                // but it is what it is for now...
+                currentToken = Encoding.UTF8.GetString(buffer.Ptr, (int) buffer.Length);
+                
+                currentToken = ref Unsafe.Add(ref currentToken, 1);
+            }
+            
+            if (allocateNative)
+            {
+                NativeMemory<NativeBuffer<byte>>.FreeWithPtrUnsafely(allocation.Ptr);
+            }
         }
         
         public void Dispose()

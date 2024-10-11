@@ -4,7 +4,7 @@ using System.Runtime.InteropServices;
 using System.Text;
 using Tokenizers.NET.Collections;
 
-namespace Tokenizers.NET
+namespace Tokenizers.NET.Outputs
 {
     [StructLayout(LayoutKind.Sequential)]
     public readonly struct DecodeOutput: IDisposable
