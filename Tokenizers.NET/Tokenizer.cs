@@ -99,6 +99,8 @@ namespace Tokenizers.NET
             public readonly string? TokenizerJsonPath;
 
             public readonly NativeMemory<byte> RawTokenizerData;
+            
+            public readonly Truncation? Truncation;
 
             public readonly bool Truncates;
 
@@ -131,7 +133,9 @@ namespace Tokenizers.NET
                 
                 var tokenizerData = JsonSerializer.Deserialize<TokenizerData>(rawTokenizerDataSpan);
             
-                Truncates = tokenizerData.Truncation != null;
+                var truncation = Truncation = tokenizerData.Truncation;
+                
+                Truncates = truncation != null;
             }
         }
         
