@@ -148,17 +148,17 @@ namespace Tokenizers.NET
     public readonly unsafe struct Tokenizer<ConfigT>: IDisposable
         where ConfigT: struct, Tokenizer.IConfig
     {
+        public static Tokenizer.BuiltConfig CONFIG
+        {
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            get => Tokenizer.BuiltConfigCache<ConfigT>.BUILT_CONFIG;
+        }
+        
         private readonly struct TempFixedAllocator
         {
-            private static Tokenizer.BuiltConfig Config
-            {
-                [MethodImpl(MethodImplOptions.AggressiveInlining)]
-                get => Tokenizer.BuiltConfigCache<ConfigT>.BUILT_CONFIG;
-            }
-            
             private static readonly int 
-                PER_BUFFER_SIZE = UTF8EncodingPirated.GetMaxByteCount(Config.ExpectedMaxInputLength.ToSignedUnchecked()),
-                TOTAL_BUFFER_SIZE = PER_BUFFER_SIZE * Config.ExpectedMaxBatches.ToSignedUnchecked();
+                PER_BUFFER_SIZE = UTF8EncodingPirated.GetMaxByteCount(CONFIG.ExpectedMaxInputLength.ToSignedUnchecked()),
+                TOTAL_BUFFER_SIZE = PER_BUFFER_SIZE * CONFIG.ExpectedMaxBatches.ToSignedUnchecked();
             
             // We need to keep a GC reference to it
             // Yes, technically we could malloc, but POH allocation does have its benefits,
@@ -189,7 +189,7 @@ namespace Tokenizers.NET
             
             public TempFixedAllocator()
             {
-                var maxExpectedBatches = Config.ExpectedMaxBatches.ToSignedUnchecked();
+                var maxExpectedBatches = CONFIG.ExpectedMaxBatches.ToSignedUnchecked();
                 
                 var buffers = Buffers = AllocationHelpers.AllocatePinnedUninitializedAligned<byte>(
                     TOTAL_BUFFER_SIZE,
@@ -296,11 +296,7 @@ namespace Tokenizers.NET
         
         private readonly nint TokenizerHandle;
 
-        public Tokenizer.BuiltConfig Config
-        {
-            [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            get => Tokenizer.BuiltConfigCache<ConfigT>.BUILT_CONFIG;
-        }
+        public Tokenizer.BuiltConfig Config => CONFIG;
         
         public bool Truncate
         {
