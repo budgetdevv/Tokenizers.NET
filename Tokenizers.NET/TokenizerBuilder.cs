@@ -1,6 +1,9 @@
 using System;
 using System.IO;
+using System.Net.Http;
+using System.Net.Http.Json;
 using System.Text.Json;
+using System.Threading.Tasks;
 using Tokenizers.NET.Collections;
 
 namespace Tokenizers.NET
@@ -13,6 +16,11 @@ namespace Tokenizers.NET
 
     public sealed class TokenizerBuilder
     {
+        private static readonly string DEFAULT_TOKENIZER_JSON_CACHE_DIRECTORY = Path.Combine(
+            AppContext.BaseDirectory,
+            "TokenizersJSONCache"
+        );
+
         internal uint ExpectedMaxInputLength = 1024, ExpectedMaxBatches = 16;
 
         public ExceedExpectedMaxBatchesBehavior ExceedExpectedMaxBatchesBehavior = ExceedExpectedMaxBatchesBehavior.AllocateBuffer;
@@ -48,6 +56,46 @@ namespace Tokenizers.NET
         public TokenizerBuilder SetRawTokenizerData(byte[] rawTokenizerData)
         {
             RawTokenizerData = rawTokenizerData;
+            return this;
+        }
+
+        public async ValueTask<TokenizerBuilder> DownloadFromHuggingFaceRepoAsync(
+            string huggingFaceRepoName,
+            string? cacheDirectory = null,
+            bool forceDownload = false)
+        {
+            cacheDirectory ??= DEFAULT_TOKENIZER_JSON_CACHE_DIRECTORY;
+
+            if (!Directory.Exists(cacheDirectory))
+            {
+                Directory.CreateDirectory(cacheDirectory);
+            }
+
+            var tokenizerJSONFileName = $"{huggingFaceRepoName.Replace('/', '_')}.json";
+
+            var tokenizerJsonPath = Path.Combine(cacheDirectory, tokenizerJSONFileName);
+
+            TokenizerJsonPath = tokenizerJsonPath;
+
+            var shouldSkip = File.Exists(tokenizerJsonPath) && !forceDownload;
+
+            if (shouldSkip)
+            {
+                return this;
+            }
+
+            using var httpClient = new HttpClient();
+
+            httpClient.DefaultRequestHeaders.Add("User-Agent", "Tokenizers.NET");
+
+            var downloadURL = $"https://huggingface.co/{huggingFaceRepoName}/resolve/main/tokenizer.json?download=true";
+
+            var rawTokenizerData = await httpClient.GetByteArrayAsync(downloadURL);
+
+            await File.WriteAllBytesAsync(tokenizerJsonPath, rawTokenizerData);
+
+            RawTokenizerData = rawTokenizerData;
+
             return this;
         }
 

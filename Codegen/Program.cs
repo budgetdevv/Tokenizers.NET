@@ -20,15 +20,11 @@ namespace Codegen
                 "New makeup trends focus on bold colors and innovative techniques",
             }.ToArray();
 
-            const string RAW_TOKENIZER_DATA_URL = "https://raw.githubusercontent.com/budgetdevv/Tokenizers.NET/refs/heads/main/SampleTokenizers/FlorenceTokenizer.json";
-
-            var rawTokenizerData = await new HttpClient().GetByteArrayAsync(RAW_TOKENIZER_DATA_URL);
-
-            var tokenizer = new TokenizerBuilder()
+            var tokenizer = (await new TokenizerBuilder()
                 .SetExpectedMaxInputLength(512)
                 .SetExpectedMaxBatches(16)
                 .SetExceedExpectedMaxBatchesBehavior(ExceedExpectedMaxBatchesBehavior.AllocateBuffer)
-                .SetRawTokenizerData(rawTokenizerData)
+                .DownloadFromHuggingFaceRepoAsync("microsoft/Florence-2-large"))
                 .Build();
             
             var outputs = new NativeMemory<TokenizeOutput>((nuint) inputs.Length);

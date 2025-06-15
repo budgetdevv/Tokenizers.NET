@@ -16,13 +16,13 @@ namespace Sample
             });
         }
         
-        private static void Main(string[] args)
+        private static async Task Main(string[] args)
         {
-            var tokenizer = new TokenizerBuilder()
+            var tokenizer = (await new TokenizerBuilder()
                 .SetExpectedMaxBatches(1024)
                 .SetExpectedMaxInputLength(16)
                 .SetExceedExpectedMaxBatchesBehavior(ExceedExpectedMaxBatchesBehavior.AllocateBuffer)
-                .SetTokenizerJsonPath("OverflowingTokenizer.json")
+                .DownloadFromHuggingFaceRepoAsync("TrumpMcDonaldz/OverflowingTokenizer"))
                 .Build();
 
             Console.WriteLine($"Truncates: {tokenizer.IsTruncating}\n");
