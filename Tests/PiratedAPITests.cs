@@ -1,7 +1,7 @@
 using System.Text;
 using Allure.NUnit;
 using FluentAssertions;
-using Tokenizers.NET;
+using Tokenizers.NET.Helpers;
 
 namespace Tests
 {

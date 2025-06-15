@@ -1,9 +1,7 @@
 using System.Diagnostics;
-using System.Runtime.CompilerServices;
 using System.Text;
-using Tokenizers.NET.Helpers;
 
-namespace Tokenizers.NET
+namespace Tokenizers.NET.Helpers
 {
     
     internal static class UTF8EncodingPirated
