@@ -38,16 +38,16 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4.1.1
 
-      - name: Install .NET 8.0
+      - name: Install .NET ${{ vars.DOTNET_VERSION }}
         uses: actions/setup-dotnet@v3
         with:
-          dotnet-version: 8.0.x
+          dotnet-version: ${{ vars.DOTNET_VERSION }}.0.x
 
       - name: Restore dependencies
         run: dotnet restore
 
       - name: Test
-        run: dotnet test --framework net8.0 --no-restore /p:SetupGHTestWorkflow=true
+        run: dotnet test --framework net${{ vars.DOTNET_VERSION }}.0 --no-restore /p:SetupGHTestWorkflow=true
         
       - name: Get short commit SHA
         id: vars
@@ -94,7 +94,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: allure-results
-          path: Tests/bin/Debug/net8.0/allure-results
+          path: Tests/bin/Debug/net${{ vars.DOTNET_VERSION }}.0/allure-results
           if-no-files-found: error
           retention-days: 20
 
