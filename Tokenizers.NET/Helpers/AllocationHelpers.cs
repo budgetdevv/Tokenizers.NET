@@ -1,6 +1,4 @@
-using System;
 using System.Diagnostics;
-using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 
 namespace Tokenizers.NET.Helpers
@@ -23,7 +21,7 @@ namespace Tokenizers.NET.Helpers
             int length,
             int alignment,
             out T* alignedPtr)
-            where T : unmanaged
+            where T: unmanaged
         {
             var extraAllocs = (alignment / sizeof(T)) + 1;
 
