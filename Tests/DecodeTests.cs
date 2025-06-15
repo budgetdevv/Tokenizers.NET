@@ -2,18 +2,19 @@ using System.Text;
 using Allure.NUnit;
 using FluentAssertions;
 using Tokenizers.NET;
+using Tokenizers.NET.Helpers;
 
 namespace Tests
 {
     [AllureNUnit]
     public sealed class DecodeTests
     {
-        private Tokenizer<Configs.FlorenceTokenizer> FlorenceTokenizer;
+        private Tokenizer FlorenceTokenizer;
         
         [SetUp]
         public void Setup()
         {
-            FlorenceTokenizer = new();
+            FlorenceTokenizer = TokenizerSetup.BuildFlorenceTokenizer();
         }
 
         [TearDown]

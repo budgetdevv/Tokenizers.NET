@@ -2,19 +2,20 @@ using Allure.NUnit;
 using FluentAssertions;
 using Tokenizers.NET;
 using Tokenizers.NET.Collections;
+using Tokenizers.NET.Helpers;
 
 namespace Tests
 {
     [AllureNUnit]
     public sealed class SIMDHelpersTests
     {
-        private Tokenizer<Configs.FlorenceTokenizer> FlorenceTokenizer;
+        private Tokenizer FlorenceTokenizer;
         
         // What if Rust code doesn't change?
         [SetUp]
         public void Setup()
         {
-            FlorenceTokenizer = new();
+            FlorenceTokenizer = TokenizerSetup.BuildFlorenceTokenizer();
         }
 
         [TearDown]

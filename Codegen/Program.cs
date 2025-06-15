@@ -1,28 +1,16 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.Net.Http;
-using System.Runtime.CompilerServices;
 using System.Threading;
+using System.Threading.Tasks;
 using Tokenizers.NET;
 using Tokenizers.NET.Collections;
 using Tokenizers.NET.Outputs;
 
 namespace Codegen
 {
-    internal static unsafe class Program
+    internal static class Program
     {
-        private struct TokenizerConfig: Tokenizer.IConfig
-        {
-            public static Tokenizer.ConfigBuilder ConfigBuilder =>
-                new Tokenizer.ConfigBuilder()
-                    .SetExpectedMaxInputLength(512)
-                    .SetExpectedMaxBatches(16)
-                    .SetExceedExpectedMaxBatchesBehavior(Tokenizer.ExceedExpectedMaxBatchesBehavior.AllocateBuffer)
-                    // .SetTokenizerJsonPath("FlorenceTokenizer.json")
-                    .SetRawTokenizerData(new HttpClient().GetByteArrayAsync("https://raw.githubusercontent.com/budgetdevv/Tokenizers.NET/refs/heads/main/SampleTokenizers/FlorenceTokenizer.json").Result);
-        }
-        
-        static void Main(string[] args)
+        private static async Task Main(string[] args)
         {
             // Ensure we ain't cheating by passing a constant span value
             // E.x. TokenizeBatch_DISASM(model.Tokenizer, [ "Hi", "Bye" ]);
@@ -31,8 +19,17 @@ namespace Codegen
                 "Organic skincare for sensitive skin with aloe vera and chamomile.",
                 "New makeup trends focus on bold colors and innovative techniques",
             }.ToArray();
-            
-            var tokenizer = new Tokenizer<TokenizerConfig>();
+
+            const string RAW_TOKENIZER_DATA_URL = "https://raw.githubusercontent.com/budgetdevv/Tokenizers.NET/refs/heads/main/SampleTokenizers/FlorenceTokenizer.json";
+
+            var rawTokenizerData = await new HttpClient().GetByteArrayAsync(RAW_TOKENIZER_DATA_URL);
+
+            var tokenizer = new TokenizerBuilder()
+                .SetExpectedMaxInputLength(512)
+                .SetExpectedMaxBatches(16)
+                .SetExceedExpectedMaxBatchesBehavior(ExceedExpectedMaxBatchesBehavior.AllocateBuffer)
+                .SetRawTokenizerData(rawTokenizerData)
+                .Build();
             
             var outputs = new NativeMemory<TokenizeOutput>((nuint) inputs.Length);
             
@@ -47,7 +44,10 @@ namespace Codegen
             }
         }
 
-        private static void Disasm(Tokenizer<TokenizerConfig> tokenizer, ReadOnlySpan<string> inputs, NativeMemory<TokenizeOutput> outputs)
+        private static unsafe void Disasm(
+            Tokenizer tokenizer,
+            ReadOnlySpan<string> inputs,
+            NativeMemory<TokenizeOutput> outputs)
         {
             Tokenize_DISASM(tokenizer, inputs[0]);
             
@@ -59,9 +59,7 @@ namespace Codegen
         private const MethodImplOptions DISASM_METHOD_IMPL_OPTIONS = MethodImplOptions.NoInlining; // | MethodImplOptions.AggressiveOptimization;
 
         [MethodImpl(DISASM_METHOD_IMPL_OPTIONS)]
-        private static void Tokenize_DISASM(
-            Tokenizer<TokenizerConfig> tokenizer,
-            string input)
+        private static void Tokenize_DISASM(Tokenizer tokenizer, string input)
         {
             tokenizer.TokenizeInternal(
                 input,
@@ -71,7 +69,7 @@ namespace Codegen
         
         [MethodImpl(DISASM_METHOD_IMPL_OPTIONS)]
         private static void TokenizeBatch_DISASM(
-            Tokenizer<TokenizerConfig> tokenizer,
+            Tokenizer tokenizer,
             ReadOnlySpan<string> inputs,
             NativeMemory<TokenizeOutput> outputs)
         {

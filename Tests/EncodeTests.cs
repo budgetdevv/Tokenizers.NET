@@ -10,15 +10,15 @@ namespace Tests
     [AllureNUnit]
     public sealed class EncodeTests
     {
-        private Tokenizer<Configs.FlorenceTokenizer> FlorenceTokenizer;
+        private Tokenizer FlorenceTokenizer;
         
-        private Tokenizer<Configs.OverflowingTokenizer> OverflowingTokenizer;
+        private Tokenizer OverflowingTokenizer;
         
         [SetUp]
         public void Setup()
         {
-            FlorenceTokenizer = new();
-            OverflowingTokenizer = new();
+            FlorenceTokenizer = TokenizerSetup.BuildFlorenceTokenizer();
+            OverflowingTokenizer = TokenizerSetup.BuildOverflowingTokenizer();
         }
 
         [TearDown]

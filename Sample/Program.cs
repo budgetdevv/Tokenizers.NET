@@ -1,19 +1,10 @@
 ﻿using Tokenizers.NET;
+using Tokenizers.NET.Helpers;
 
 namespace Sample
 {
     internal static class Program
     {
-        private struct Config: Tokenizer.IConfig
-        {
-            public static Tokenizer.ConfigBuilder ConfigBuilder=> 
-                new Tokenizer.ConfigBuilder()
-                    .SetExpectedMaxBatches(1024)
-                    .SetExpectedMaxInputLength(16)
-                    .SetExceedExpectedMaxBatchesBehavior(Tokenizer.ExceedExpectedMaxBatchesBehavior.AllocateBuffer)
-                    .SetTokenizerJsonPath("OverflowingTokenizer.json");
-        }
-
         private static string GenerateString(char val, int length)
         {
             return string.Create(length, length, (buffer, len) =>
@@ -27,9 +18,14 @@ namespace Sample
         
         private static void Main(string[] args)
         {
-            var tokenizer = new Tokenizer<Config>();
+            var tokenizer = new TokenizerBuilder()
+                .SetExpectedMaxBatches(1024)
+                .SetExpectedMaxInputLength(16)
+                .SetExceedExpectedMaxBatchesBehavior(ExceedExpectedMaxBatchesBehavior.AllocateBuffer)
+                .SetTokenizerJsonPath("OverflowingTokenizer.json")
+                .Build();
 
-            Console.WriteLine($"Truncates: {tokenizer.Truncate}\n");
+            Console.WriteLine($"Truncates: {tokenizer.IsTruncating}\n");
             
             ReadOnlySpan<string> inputTexts = 
             [

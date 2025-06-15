@@ -6,6 +6,7 @@ using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Text;
 using System.Text.Json;
+using NoParamlessCtor.Shared.Attributes;
 using Tokenizers.NET.Collections;
 using Tokenizers.NET.Enumerators;
 using Tokenizers.NET.Helpers;
@@ -13,153 +14,18 @@ using Tokenizers.NET.Outputs;
 
 namespace Tokenizers.NET
 {
-    public static unsafe class Tokenizer
+    [NoParamlessCtor]
+    public readonly unsafe partial struct Tokenizer: IDisposable
     {
-        public enum ExceedExpectedMaxBatchesBehavior
+        [NoParamlessCtor]
+        private readonly partial struct TempFixedAllocator
         {
-            AllocateBuffer,
-            // Discard, // TODO: Implement this
-        }
-        
-        public interface IConfig
-        {
-            public static abstract ConfigBuilder ConfigBuilder { get; }
-        }
+            // Modern cacheline size is either 64 or 128 bytes,
+            // reducing cross-cacheline reads for SIMD instructions.
+            // This should also satisfy the alignment for NativeBuffer<NativeBuffer<byte>>,
+            // enabling us to reinterpret the memory in IDsToTokens() to avoid allocation.
+            private const int ALIGNMENT = 128;
 
-        public struct ConfigBuilder
-        {
-            internal uint ExpectedMaxInputLength, ExpectedMaxBatches;
-
-            internal ExceedExpectedMaxBatchesBehavior ExceedExpectedMaxBatchesBehavior;
-
-            internal string? TokenizerJsonPath;
-
-            internal byte[]? RawTokenizerData;
-
-            public ConfigBuilder()
-            {
-                ExpectedMaxInputLength = 1024;
-
-                ExpectedMaxBatches = 16;
-
-                ExceedExpectedMaxBatchesBehavior = ExceedExpectedMaxBatchesBehavior.AllocateBuffer;
-
-                TokenizerJsonPath = null;
-
-                RawTokenizerData = null;
-            }
-            
-            [UnscopedRef]
-            public ref ConfigBuilder SetExpectedMaxInputLength(uint expectedMaxInputLength)
-            {
-                ExpectedMaxInputLength = expectedMaxInputLength;
-                return ref this;
-            }
-            
-            [UnscopedRef]
-            public ref ConfigBuilder SetExpectedMaxBatches(uint expectedMaxBatches)
-            {
-                ExpectedMaxBatches = expectedMaxBatches;
-                return ref this;
-            }
-            
-            [UnscopedRef]
-            public ref ConfigBuilder SetExceedExpectedMaxBatchesBehavior(ExceedExpectedMaxBatchesBehavior exceedExpectedMaxBatchesBehavior)
-            {
-                ExceedExpectedMaxBatchesBehavior = exceedExpectedMaxBatchesBehavior;
-                return ref this;
-            }
-            
-            [UnscopedRef]
-            public ref ConfigBuilder SetTokenizerJsonPath(string tokenizerJsonPath)
-            {
-                TokenizerJsonPath = tokenizerJsonPath;
-                return ref this;
-            }
-            
-            [UnscopedRef]
-            public ref ConfigBuilder SetRawTokenizerData(byte[] rawTokenizerData)
-            {
-                RawTokenizerData = rawTokenizerData;
-                return ref this;
-            }
-            
-            internal BuiltConfig Build()
-            {
-                return new(this);
-            }
-        }
-
-        public readonly struct BuiltConfig
-        {
-            public readonly uint ExpectedMaxInputLength, ExpectedMaxBatches;
-        
-            public readonly ExceedExpectedMaxBatchesBehavior ExceedExpectedMaxBatchesBehavior;
-        
-            public readonly string? TokenizerJsonPath;
-
-            public readonly NativeMemory<byte> RawTokenizerData;
-            
-            public readonly Truncation? Truncation;
-
-            public readonly bool Truncates;
-
-            [Obsolete("Use constructor with parameters.", error: true)]
-            public BuiltConfig()
-            {
-                throw new NotSupportedException("Use constructor with parameters.");
-            }
-            
-            internal BuiltConfig(ConfigBuilder builder)
-            {
-                ExpectedMaxInputLength = builder.ExpectedMaxInputLength;
-                ExpectedMaxBatches = builder.ExpectedMaxBatches;
-                ExceedExpectedMaxBatchesBehavior = builder.ExceedExpectedMaxBatchesBehavior;
-                
-                var tokenizerJsonPath = TokenizerJsonPath = builder.TokenizerJsonPath;
-                
-                var rawTokenizerDataArr = builder.RawTokenizerData;
-
-                // Let it throw if both are null
-                rawTokenizerDataArr ??= File.ReadAllBytes(tokenizerJsonPath!);
-
-                // TODO: Consider mmap instead of heap allocation.
-                
-                var rawTokenizerData = RawTokenizerData = new((nuint) rawTokenizerDataArr.Length);
-
-                var rawTokenizerDataSpan = rawTokenizerData.Buffer.AsSpan();
-                
-                rawTokenizerDataArr.CopyTo(rawTokenizerDataSpan);
-                
-                var tokenizerData = JsonSerializer.Deserialize<TokenizerData>(rawTokenizerDataSpan);
-            
-                var truncation = Truncation = tokenizerData.Truncation;
-                
-                Truncates = truncation != null;
-            }
-        }
-        
-        internal static class BuiltConfigCache<ConfigT> where ConfigT: struct, IConfig
-        {
-            public static readonly BuiltConfig BUILT_CONFIG = ConfigT.ConfigBuilder.Build();
-        }
-    }
-    
-    public readonly unsafe struct Tokenizer<ConfigT>: IDisposable
-        where ConfigT: struct, Tokenizer.IConfig
-    {
-        public static Tokenizer.BuiltConfig CONFIG
-        {
-            [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            get => Tokenizer.BuiltConfigCache<ConfigT>.BUILT_CONFIG;
-        }
-        
-        private readonly struct TempFixedAllocator
-        {
-            private static readonly int 
-                PER_BUFFER_SIZE = UTF8EncodingPirated.GetMaxByteCount(CONFIG.ExpectedMaxInputLength.ToSignedUnchecked()),
-                TOTAL_BUFFER_SIZE = PER_BUFFER_SIZE * CONFIG.ExpectedMaxBatches.ToSignedUnchecked();
-            
             // We need to keep a GC reference to it
             // Yes, technically we could malloc, but POH allocation does have its benefits,
             // such as the GC automatically cleaning it up when the entire tokenizer is out of scope.
@@ -176,30 +42,38 @@ namespace Tokenizers.NET
 
             private readonly int Count;
 
-            // Modern cacheline size is either 64 or 128 bytes,
-            // reducing cross-cacheline reads for SIMD instructions.
-            // This should also satisfy the alignment for NativeBuffer<NativeBuffer<byte>>,
-            // enabling us to reinterpret the memory in IDsToTokens() to avoid allocation.
-            private const int ALIGNMENT = 128;
+            private readonly nuint PerBufferSize;
+
+            private readonly nuint TotalBufferSize;
 
             static TempFixedAllocator()
             {
                 Debug.Assert(ALIGNMENT % sizeof(NativeBuffer<NativeBuffer<byte>>) == 0);
             }
             
-            public TempFixedAllocator()
+            public TempFixedAllocator(TokenizerConfig config)
             {
-                var maxExpectedBatches = CONFIG.ExpectedMaxBatches.ToSignedUnchecked();
-                
+                var expectedMaxBatches = config.ExpectedMaxBatches.ToSignedUnchecked();
+
+                var perBufferSize = UTF8EncodingPirated.GetMaxByteCount(
+                    config.ExpectedMaxInputLength.ToSignedUnchecked()
+                );
+
+                PerBufferSize = perBufferSize.ToNuintUnchecked();
+
+                var totalBufferSize = perBufferSize * expectedMaxBatches;
+
+                TotalBufferSize = totalBufferSize.ToNuintUnchecked();
+
                 var buffers = Buffers = AllocationHelpers.AllocatePinnedUninitializedAligned<byte>(
-                    TOTAL_BUFFER_SIZE,
+                    totalBufferSize,
                     ALIGNMENT,
                     out var buffersPtr
                 );
 
                 BuffersPtr = buffersPtr;
 
-                Count = maxExpectedBatches;
+                Count = expectedMaxBatches;
                 
                 if (buffers.Length == 0)
                 {
@@ -253,11 +127,13 @@ namespace Tokenizers.NET
                 if (success)
                 {
                     var readIndex = handle.CurrentCount = count - 1;
-                    
+
+                    var perBufferSize = PerBufferSize;
+
                     // Don't clear underlying reference, this is to ensure that the buffer will not be collected by GC.
                     // When p/invoking, we pass the pointer to the buffer, so we don't want it to be collected.
                     // It is also more performant to avoid clearing...
-                    buffer = new(BuffersPtr + (readIndex.ToUnsignedUnchecked() * (uint) PER_BUFFER_SIZE), (uint) PER_BUFFER_SIZE);
+                    buffer = new(BuffersPtr + (readIndex.ToNuintUnchecked() * perBufferSize), perBufferSize);
                 }
 
                 return success;
@@ -266,7 +142,7 @@ namespace Tokenizers.NET
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             public NativeBuffer<byte> GetFullAllocationUnsafely()
             { 
-                return new(BuffersPtr, (nuint) TOTAL_BUFFER_SIZE);
+                return new(BuffersPtr, TotalBufferSize);
             }
             
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -282,10 +158,12 @@ namespace Tokenizers.NET
                 
                 // I am pretty sure this can be optimized into a single comparison,
                 // but let's play safe for now...
-                return startPtr <= currentPtr && currentPtr < startPtr + TOTAL_BUFFER_SIZE;
+                return startPtr <= currentPtr && currentPtr < startPtr + TotalBufferSize;
             }
         }
-        
+
+        public readonly TokenizerConfig Config;
+
         // ReSharper disable once NotAccessedField.Local
         // We need to keep a GC reference to it
         private readonly NativeBuffer<byte>[] U8StringBuffers;
@@ -295,18 +173,16 @@ namespace Tokenizers.NET
         private readonly TempFixedAllocator Allocator;
         
         private readonly nint TokenizerHandle;
-
-        public Tokenizer.BuiltConfig Config => CONFIG;
         
-        public bool Truncate
+        public bool IsTruncating
         {
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             get => Config.Truncates;
         }
-        
-        public Tokenizer()
+
+        internal Tokenizer(TokenizerBuilder builder)
         {
-            var config = Config;
+            var config = Config = builder.BuildConfig();
             
             var expectedMaxBatches = config.ExpectedMaxBatches;
             
@@ -318,7 +194,7 @@ namespace Tokenizers.NET
             
             U8StringBuffersPtr = u8StringBuffers.PinnedArrayToPointer();
             
-            Allocator = new();
+            Allocator = new(config);
 
             TokenizerHandle = TokenizerNativeMethods.AllocateTokenizer(rawTokenizerData);
         }
@@ -360,7 +236,7 @@ namespace Tokenizers.NET
                 TokenizerHandle, 
                 u8String,
                 addSpecialTokens,
-                Truncate
+                IsTruncating
             );
             
             if (allocateNative)
@@ -468,7 +344,7 @@ namespace Tokenizers.NET
 
             var tokenizerHandle = TokenizerHandle;
             
-            var truncate = Truncate;
+            var truncate = IsTruncating;
             
             TokenizerNativeMethods.TokenizerEncodeBatch(
                 tokenizerPtr: tokenizerHandle,

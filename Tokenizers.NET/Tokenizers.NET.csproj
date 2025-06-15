@@ -116,6 +116,10 @@
               Pack="true"
               PackagePath="runtimes/linux-arm64/native/libtokenizers_net.so" />
     </ItemGroup>
+    
+    <ItemGroup>
+      <PackageReference Include="NoParamlessCtor" Version="1.1.1-alpha.29.07c3a8d" />
+    </ItemGroup>
 
     <!--  https://youtrack.jetbrains.com/issue/RIDER-26906 -->
     <Target Name="ExcludeAnnoyingDylib" AfterTargets="ResolveAssemblyReferences">

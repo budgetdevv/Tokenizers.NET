@@ -249,9 +249,7 @@ impl TokenizeOutputOverflowedToken
 }
 
 #[no_mangle]
-pub unsafe extern "C" fn allocate_tokenizer(
-    json_bytes: NativeBuffer<u8>)
-    -> *mut Tokenizer
+pub unsafe extern "C" fn allocate_tokenizer(json_bytes: NativeBuffer<u8>) -> *mut Tokenizer
 {
     let json_bytes = json_bytes.as_slice();
 

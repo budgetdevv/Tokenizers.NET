@@ -6,7 +6,7 @@ using System.Runtime.Intrinsics;
 using System.Runtime.Intrinsics.X86;
 using Tokenizers.NET.Collections;
 
-namespace Tokenizers.NET
+namespace Tokenizers.NET.Helpers
 {
     public static unsafe class SIMDHelpers
     {
