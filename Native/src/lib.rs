@@ -6,6 +6,8 @@ use tokenizers::tokenizer::Tokenizer;
 use tokenizers::Encoding;
 // #[inline(always)] is used aggressively - Realistically we only have a few callsites.
 
+// Test Rust GH workflow
+
 #[repr(C)]
 union RawPointer<T>
 {
