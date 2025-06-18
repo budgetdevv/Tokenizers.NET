@@ -199,10 +199,15 @@ namespace Tokenizers.NET
         {
             return TokenizeInternal(input, addSpecialTokens);
         }
+
+        public TokenizeOutput Tokenize(ReadOnlySpan<char> input, bool addSpecialTokens = true)
+        {
+            return TokenizeInternal(input, addSpecialTokens);
+        }
         
         [SkipLocalsInit]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal TokenizeOutput TokenizeInternal(string input, bool addSpecialTokens)
+        internal TokenizeOutput TokenizeInternal(ReadOnlySpan<char> input, bool addSpecialTokens)
         {
             var inputLength = input.Length;
 
