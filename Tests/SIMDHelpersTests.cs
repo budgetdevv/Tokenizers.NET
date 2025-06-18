@@ -1,7 +1,7 @@
 using Allure.NUnit;
 using FluentAssertions;
 using Tokenizers.NET;
-using Tokenizers.NET.Collections;
+using NativeMemory;
 using Tokenizers.NET.Helpers;
 
 namespace Tests
@@ -34,8 +34,8 @@ namespace Tests
                 using var srcBuffer = new NativeMemory<uint>(i);
                 using var destBuffer = new NativeMemory<ulong>(i);
 
-                var srcMemory = srcBuffer.Buffer;
-                var destMemory = destBuffer.Buffer;
+                var srcMemory = srcBuffer.Window;
+                var destMemory = destBuffer.Window;
 
                 var srcSpan = srcMemory.AsSpan();
                 var destSpan = destMemory.AsSpan();
@@ -47,7 +47,7 @@ namespace Tests
                     slot = (uint) currentIndex++;
                 }
 
-                srcBuffer.Buffer.Widen(destBuffer.Buffer);
+                srcBuffer.Window.Widen(destBuffer.Window);
                 
                 srcSpan.ToArray().Should().BeEquivalentTo(destSpan.ToArray());
             }
@@ -62,7 +62,7 @@ namespace Tests
             {
                 using var srcBuffer = new NativeMemory<ulong>(i);
 
-                var srcMemory = srcBuffer.Buffer;
+                var srcMemory = srcBuffer.Window;
                 
                 var srcSpan = srcMemory.AsSpan();
 
@@ -101,8 +101,8 @@ namespace Tests
                 using var srcBuffer = new NativeMemory<ulong>(i);
                 using var destBuffer = new NativeMemory<uint>(i);
 
-                var srcMemory = srcBuffer.Buffer;
-                var destMemory = destBuffer.Buffer;
+                var srcMemory = srcBuffer.Window;
+                var destMemory = destBuffer.Window;
 
                 var srcSpan = srcMemory.AsSpan();
                 var destSpan = destMemory.AsSpan();

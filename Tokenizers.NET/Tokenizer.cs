@@ -2,8 +2,8 @@
 using System.Diagnostics.CodeAnalysis;
 using System.Runtime.InteropServices;
 using System.Text;
+using NativeMemory;
 using NoParamlessCtor.Shared.Attributes;
-using Tokenizers.NET.Collections;
 using Tokenizers.NET.Enumerators;
 using Tokenizers.NET.Helpers;
 using Tokenizers.NET.Outputs;
@@ -18,7 +18,7 @@ namespace Tokenizers.NET
         {
             // Modern cacheline size is either 64 or 128 bytes,
             // reducing cross-cacheline reads for SIMD instructions.
-            // This should also satisfy the alignment for NativeBuffer<NativeBuffer<byte>>,
+            // This should also satisfy the alignment for MemoryWindow<MemoryWindow<byte>>,
             // enabling us to reinterpret the memory in IDsToTokens() to avoid allocation.
             private const int ALIGNMENT = 128;
 
@@ -28,23 +28,18 @@ namespace Tokenizers.NET
             // It should also work better with existing .NET debugging tools.
             
             // While we could use Unsafe.AsPointer(ref MemoryMarshal.GetArrayDataReference(Buffers))
-            // to obtain a pointer, GetArrayDataReference emit instructiont that does a null check.
+            // to obtain a pointer, GetArrayDataReference emit instruction that does a null check.
             // We already know that Buffers will never be null...
-            
-            // ReSharper disable once NotAccessedField.Local
-            private readonly byte[] Buffers;
-            
-            private readonly byte* BuffersPtr;
 
-            private readonly int Count;
+            private readonly PinnedArrayMemory<byte> BuffersMemory;
+
+            private readonly int AllocatedBufferCount;
 
             private readonly nuint PerBufferSize;
 
-            private readonly nuint TotalBufferSize;
-
             static TempFixedAllocator()
             {
-                Debug.Assert(ALIGNMENT % sizeof(NativeBuffer<NativeBuffer<byte>>) == 0);
+                Debug.Assert(ALIGNMENT % sizeof(MemoryWindow<MemoryWindow<byte>>) == 0);
             }
             
             public TempFixedAllocator(TokenizerConfig config)
@@ -59,19 +54,15 @@ namespace Tokenizers.NET
 
                 var totalBufferSize = perBufferSize * expectedMaxBatches;
 
-                TotalBufferSize = totalBufferSize.ToNuintUnchecked();
-
-                var buffers = Buffers = AllocationHelpers.AllocatePinnedUninitializedAligned<byte>(
-                    totalBufferSize,
-                    ALIGNMENT,
-                    out var buffersPtr
+                BuffersMemory = new(
+                    length: totalBufferSize,
+                    zeroed: true,
+                    alignment: ALIGNMENT
                 );
 
-                BuffersPtr = buffersPtr;
-
-                Count = expectedMaxBatches;
+                AllocatedBufferCount = expectedMaxBatches;
                 
-                if (buffers.Length == 0)
+                if (BuffersMemory.AlignedLength == 0)
                 {
                     throw new InvalidOperationException("Buffers length cannot be zero.");
                 }
@@ -87,17 +78,17 @@ namespace Tokenizers.NET
                 internal Handle(ref readonly TempFixedAllocator allocator)
                 {
                     Allocator = ref allocator;
-                    CurrentCount = allocator.Count;
+                    CurrentCount = allocator.AllocatedBufferCount;
                 }
                 
                 [MethodImpl(MethodImplOptions.AggressiveInlining)]
-                public bool TryAllocate(out NativeBuffer<byte> buffer)
+                public bool TryAllocate(out MemoryWindow<byte> buffer)
                 {
                     return Allocator.TryAllocate(ref this, out buffer);
                 }
                 
                 [MethodImpl(MethodImplOptions.AggressiveInlining)]
-                public bool IsManagedAllocation(NativeBuffer<byte> buffer)
+                public bool IsManagedAllocation(MemoryWindow<byte> buffer)
                 {
                     return Allocator.IsManagedAllocation(buffer);
                 }
@@ -112,7 +103,7 @@ namespace Tokenizers.NET
             
             [SkipLocalsInit]
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            private bool TryAllocate(ref Handle handle, out NativeBuffer<byte> buffer)
+            private bool TryAllocate(ref Handle handle, out MemoryWindow<byte> buffer)
             {
                 var count = handle.CurrentCount;
                 
@@ -126,35 +117,39 @@ namespace Tokenizers.NET
 
                     var perBufferSize = PerBufferSize;
 
+                    var buffersPtr = BuffersMemory.Window.Ptr;
+
                     // Don't clear underlying reference, this is to ensure that the buffer will not be collected by GC.
                     // When p/invoking, we pass the pointer to the buffer, so we don't want it to be collected.
                     // It is also more performant to avoid clearing...
-                    buffer = new(BuffersPtr + (readIndex.ToNuintUnchecked() * perBufferSize), perBufferSize);
+                    buffer = new(buffersPtr + (readIndex.ToNuintUnchecked() * perBufferSize), perBufferSize);
                 }
 
                 return success;
             }
             
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            public NativeBuffer<byte> GetFullAllocationUnsafely()
-            { 
-                return new(BuffersPtr, TotalBufferSize);
+            public MemoryWindow<byte> GetFullAllocationUnsafely()
+            {
+                return BuffersMemory.Window;
             }
             
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            public bool IsManagedAllocation(NativeBuffer<byte> buffer)
+            public bool IsManagedAllocation(MemoryWindow<byte> buffer)
             {
                 // While it may be tempting to do buffer.Length == (nuint) PER_BUFFER_SIZE,
                 // it is not resilient to sliced buffers ( Buffers are sliced based on the write count ),
                 // as the write count could possibly be PER_BUFFER_SIZE ( However unlikely ).
-                
-                var startPtr = BuffersPtr;
+
+                ref readonly var buffersWindow = ref BuffersMemory.Window;
+
+                var buffersPtr = buffersWindow.Ptr;
                 
                 var currentPtr = buffer.Ptr;
                 
                 // I am pretty sure this can be optimized into a single comparison,
                 // but let's play safe for now...
-                return startPtr <= currentPtr && currentPtr < startPtr + TotalBufferSize;
+                return buffersPtr <= currentPtr && currentPtr < buffersPtr + buffersWindow.Length;
             }
         }
 
@@ -162,9 +157,9 @@ namespace Tokenizers.NET
 
         // ReSharper disable once NotAccessedField.Local
         // We need to keep a GC reference to it
-        private readonly NativeBuffer<byte>[] U8StringBuffers;
+        private readonly MemoryWindow<byte>[] U8StringBuffers;
         
-        private readonly NativeBuffer<byte>* U8StringBuffersPtr;
+        private readonly MemoryWindow<byte>* U8StringBuffersPtr;
         
         private readonly TempFixedAllocator Allocator;
         
@@ -182,9 +177,9 @@ namespace Tokenizers.NET
             
             var expectedMaxBatches = config.ExpectedMaxBatches;
             
-            var rawTokenizerData = config.RawTokenizerData.Buffer;
+            var rawTokenizerData = config.RawTokenizerData.Window;
             
-            var u8StringBuffers = U8StringBuffers = AllocationHelpers.AllocatePinnedUninitialized<NativeBuffer<byte>>(
+            var u8StringBuffers = U8StringBuffers = AllocationHelpers.AllocatePinnedUninitialized<MemoryWindow<byte>>(
                 expectedMaxBatches
             );
             
@@ -213,7 +208,7 @@ namespace Tokenizers.NET
 
             var allocateNative = inputLength > (Config.ExpectedMaxInputLength * Config.ExpectedMaxBatches);
 
-            NativeBuffer<byte> allocation;
+            MemoryWindow<byte> allocation;
             
             if (!allocateNative)
             {
@@ -226,12 +221,12 @@ namespace Tokenizers.NET
 
             else
             {
-                allocation = new NativeMemory<byte>((nuint) UTF8EncodingPirated.GetMaxByteCount(inputLength)).Buffer;
+                allocation = new NativeMemory<byte>((nuint) UTF8EncodingPirated.GetMaxByteCount(inputLength)).Window;
             }
 
             var bytesWritten = Encoding.UTF8.GetBytes(input, allocation.AsSpan());
             
-            var u8String = new NativeBuffer<byte>(allocation.Ptr, (nuint) bytesWritten);
+            var u8String = new MemoryWindow<byte>(allocation.Ptr, (nuint) bytesWritten);
             
             var result = TokenizerNativeMethods.TokenizerEncode(
                 TokenizerHandle, 
@@ -242,7 +237,9 @@ namespace Tokenizers.NET
             
             if (allocateNative)
             {
-                NativeMemory<byte>.WrapBuffer(allocation).Dispose();
+                NativeMemory<byte>
+                    .WrapBufferUnsafely(allocation)
+                    .Dispose();
             }
             
             return result;
@@ -263,7 +260,7 @@ namespace Tokenizers.NET
             }
         }
         
-        public void TokenizeBatch(ReadOnlySpan<string> inputs, NativeBuffer<TokenizeOutput> outputs, bool addSpecialTokens = true)
+        public void TokenizeBatch(ReadOnlySpan<string> inputs, MemoryWindow<TokenizeOutput> outputs, bool addSpecialTokens = true)
         {
             TokenizeBatchInternal(
                 inputs,
@@ -279,7 +276,7 @@ namespace Tokenizers.NET
             
             TokenizeBatchInternal(
                 inputs, 
-                outputs.Buffer,
+                outputs.Window,
                 skipLengthCheck: true,
                 addSpecialTokens: addSpecialTokens
             );
@@ -291,7 +288,7 @@ namespace Tokenizers.NET
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal void TokenizeBatchInternal(
             ReadOnlySpan<string> inputs,
-            NativeBuffer<TokenizeOutput> outputs,
+            MemoryWindow<TokenizeOutput> outputs,
             bool skipLengthCheck,
             bool addSpecialTokens)
         {
@@ -306,7 +303,7 @@ namespace Tokenizers.NET
             
             var u8StringsPtr = !exceedsExpectedMaxBatches ?
                 U8StringBuffersPtr :
-                new NativeMemory<NativeBuffer<byte>>(numInputs).Buffer.Ptr;
+                new NativeMemory<MemoryWindow<byte>>(numInputs).Window.Ptr;
             
             var allocator = Allocator.GetHandle();
             
@@ -328,7 +325,7 @@ namespace Tokenizers.NET
                 {
                     var nativeMemory = new NativeMemory<byte>((nuint) UTF8EncodingPirated.GetMaxByteCount(inputLength));
 
-                    allocation = nativeMemory.Buffer;
+                    allocation = nativeMemory.Window;
                 }
                 
                 var bytesWritten = Encoding.UTF8.GetBytes(input, allocation.AsSpan());
@@ -338,7 +335,7 @@ namespace Tokenizers.NET
                 currentU8String++;
             }
             
-            var readonlyU8Strings = new NativeBuffer<NativeBuffer<byte>>(
+            var readonlyU8Strings = new MemoryWindow<MemoryWindow<byte>>(
                 u8StringsPtr,
                 numInputs
             );
@@ -368,7 +365,7 @@ namespace Tokenizers.NET
                 return;
             }
             
-            NativeMemory<NativeBuffer<byte>>.FreeWithPtrUnsafely(readonlyU8Strings.Ptr);
+            NativeMemory<MemoryWindow<byte>>.FreeWithPtrUnsafely(readonlyU8Strings.Ptr);
         }
         
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -378,12 +375,12 @@ namespace Tokenizers.NET
             
             fixed(uint* ptr = &first)
             {
-                return Decode((NativeBuffer<uint>) new(ptr, (nuint) ids.Length), skipSpecialTokens);
+                return Decode((MemoryWindow<uint>) new(ptr, (nuint) ids.Length), skipSpecialTokens);
             }
         }
         
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public DecodeOutput Decode(NativeBuffer<uint> ids, bool skipSpecialTokens)
+        public DecodeOutput Decode(MemoryWindow<uint> ids, bool skipSpecialTokens)
         {
             var tokenizerHandle = TokenizerHandle;
             
@@ -395,13 +392,13 @@ namespace Tokenizers.NET
         {
             fixed (ulong* ptr = &MemoryMarshal.GetReference(ids))
             {
-                var idsBuffer = new NativeBuffer<ulong>(ptr, (nuint) ids.Length);
+                var idsBuffer = new MemoryWindow<ulong>(ptr, (nuint) ids.Length);
                 
                 return DecodeMutating(idsBuffer, skipSpecialTokens);
             }
         }
         
-        public DecodeOutput DecodeMutating(NativeBuffer<ulong> ids, bool skipSpecialTokens)
+        public DecodeOutput DecodeMutating(MemoryWindow<ulong> ids, bool skipSpecialTokens)
         {
             var tokenizerHandle = TokenizerHandle;
 
@@ -418,11 +415,11 @@ namespace Tokenizers.NET
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public FreeHandle IDsToTokens(NativeBuffer<uint> ids, Span<NativeBuffer<byte>> u8Strings)
+        public FreeHandle IDsToTokens(MemoryWindow<uint> ids, Span<MemoryWindow<byte>> u8Strings)
         {
-            fixed (NativeBuffer<byte>* ptr = &MemoryMarshal.GetReference(u8Strings))
+            fixed (MemoryWindow<byte>* ptr = &MemoryMarshal.GetReference(u8Strings))
             {
-                var u8StringsBuffer = new NativeBuffer<NativeBuffer<byte>>(ptr, (nuint) u8Strings.Length);
+                var u8StringsBuffer = new MemoryWindow<MemoryWindow<byte>>(ptr, (nuint) u8Strings.Length);
                 
                 return IDsToTokens(ids, u8StringsBuffer);
             }
@@ -430,8 +427,8 @@ namespace Tokenizers.NET
         
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public FreeHandle IDsToTokens(
-            NativeBuffer<uint> ids,
-            NativeBuffer<NativeBuffer<byte>> tokens,
+            MemoryWindow<uint> ids,
+            MemoryWindow<MemoryWindow<byte>> tokens,
             bool performSizeCheck = true)
         {
             if (performSizeCheck && tokens.Length < ids.Length)
@@ -444,7 +441,7 @@ namespace Tokenizers.NET
             return new(TokenizerNativeMethods.IDsToTokens(tokenizerHandle, ids, tokens));
         }
         
-        public string[] IDsToTokens(NativeBuffer<uint> ids)
+        public string[] IDsToTokens(MemoryWindow<uint> ids)
         {
             var tokens = new string[ids.Length];
             
@@ -453,7 +450,7 @@ namespace Tokenizers.NET
             return tokens;
         }
         
-        public void IDsToTokens(NativeBuffer<uint> ids, Span<string> tokens, bool performSizeCheck = true)
+        public void IDsToTokens(MemoryWindow<uint> ids, Span<string> tokens, bool performSizeCheck = true)
         {
             var inputLength = ids.Length;
             
@@ -462,22 +459,22 @@ namespace Tokenizers.NET
                 ThrowHelpers.IDsToTokens_LengthCheckFailed();
             }
 
-            var allocationSizeInBytes = (int) inputLength * sizeof(NativeBuffer<NativeBuffer<byte>>);
+            var allocationSizeInBytes = (int) inputLength * sizeof(MemoryWindow<MemoryWindow<byte>>);
 
             var allocateNative = allocationSizeInBytes > (Config.ExpectedMaxInputLength * Config.ExpectedMaxBatches);
             
-            NativeBuffer<NativeBuffer<byte>> allocation;
+            MemoryWindow<MemoryWindow<byte>> allocation;
             
             if (!allocateNative)
             {
                 var ptr = Allocator.GetFullAllocationUnsafely().Ptr;
                 
-                allocation = new((NativeBuffer<byte>*) ptr, inputLength);
+                allocation = new((MemoryWindow<byte>*) ptr, inputLength);
             }
 
             else
             {
-                allocation = new NativeMemory<NativeBuffer<byte>>(inputLength).Buffer;
+                allocation = new NativeMemory<MemoryWindow<byte>>(inputLength).Window;
             }
             
             using var freeHandle = IDsToTokens(ids, allocation, performSizeCheck: false);
@@ -495,7 +492,7 @@ namespace Tokenizers.NET
             
             if (allocateNative)
             {
-                NativeMemory<NativeBuffer<byte>>.FreeWithPtrUnsafely(allocation.Ptr);
+                NativeMemory<MemoryWindow<byte>>.FreeWithPtrUnsafely(allocation.Ptr);
             }
         }
         

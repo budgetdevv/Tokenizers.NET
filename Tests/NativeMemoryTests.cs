@@ -1,6 +1,6 @@
 using Allure.NUnit;
 using FluentAssertions;
-using Tokenizers.NET.Collections;
+using NativeMemory;
 
 namespace Tests
 {
@@ -12,11 +12,11 @@ namespace Tests
         {
             using var nativeMemory = new NativeMemory<byte>(69);
             
-            var nativeBuffer = nativeMemory.Buffer;
+            var nativeBuffer = nativeMemory.Window;
             
-            var wrappedMemory = NativeMemory<byte>.WrapBuffer(nativeBuffer);
+            var wrappedMemory = NativeMemory<byte>.WrapBufferUnsafely(nativeBuffer);
 
-            (nativeMemory == wrappedMemory).Should().BeTrue();
+            (nativeMemory.Window == wrappedMemory.Window).Should().BeTrue();
         }
     }
 }

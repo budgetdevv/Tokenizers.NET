@@ -120,6 +120,9 @@
               Pack="true"
               PackagePath="runtimes/linux-arm64/native/libtokenizers_net.so" />
     </ItemGroup>
+    <ItemGroup>
+      <ProjectReference Include="..\NativeMemory\NativeMemory\NativeMemory.csproj" />
+    </ItemGroup>
 
     <!--  https://youtrack.jetbrains.com/issue/RIDER-26906 -->
     <Target Name="ExcludeAnnoyingDylib" AfterTargets="ResolveAssemblyReferences">

@@ -37,7 +37,7 @@ namespace Sample
 
             var outputs = tokenizer.TokenizeBatch(inputTexts);
             
-            var outputSpan = outputs.Buffer.AsSpan();
+            var outputSpan = outputs.Window.AsSpan();
 
             var index = 0;
             
@@ -74,19 +74,19 @@ namespace Sample
                 Console.WriteLine(
                 $"""
                 Text: {inputTexts[index++]}
-                
+
                 Input IDs: {tokenIDs.AsReadOnlySpan().GetSpanPrintString()}
-                
-                Input IDs Widen: {tokenIDs.Widen().Buffer.AsSpan().GetSpanPrintString()}
-                
+
+                Input IDs Widen: {tokenIDs.Widen().Window.AsSpan().GetSpanPrintString()}
+
                 Attention Mask: {token.AttentionMask.AsReadOnlySpan().GetSpanPrintString()}
-                
+
                 Special Tokens Mask: {token.SpecialTokensMask.AsReadOnlySpan().GetSpanPrintString()}
-                
+
                 Token Type IDs: {token.TokenTypeIDs.AsReadOnlySpan().GetSpanPrintString()}
-                
+
                 Input IDs Length: {token.IDs.Length}
-                
+
                 """);
 
                 const bool TEST_DECODE = false;

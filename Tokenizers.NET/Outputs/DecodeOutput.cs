@@ -1,13 +1,13 @@
 using System.Runtime.InteropServices;
 using System.Text;
-using Tokenizers.NET.Collections;
+using NativeMemory;
 
 namespace Tokenizers.NET.Outputs
 {
     [StructLayout(LayoutKind.Sequential)]
     public readonly struct DecodeOutput: IDisposable
     {
-        public readonly NativeBuffer<byte> TextBuffer;
+        public readonly MemoryWindow<byte> TextBuffer;
         
         public readonly nint FreeHandle;
         

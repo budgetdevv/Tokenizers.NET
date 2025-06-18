@@ -2,35 +2,35 @@ using System.Diagnostics;
 using System.Numerics;
 using System.Runtime.Intrinsics;
 using System.Runtime.Intrinsics.X86;
-using Tokenizers.NET.Collections;
+using NativeMemory;
 
 namespace Tokenizers.NET.Helpers
 {
     public static unsafe class SIMDHelpers
     {
-        public static NativeMemory<ulong> Widen(this NativeBuffer<uint> srcBuffer)
+        public static NativeMemory<ulong> Widen(this MemoryWindow<uint> srcBuffer)
         {
             var result = new NativeMemory<ulong>(srcBuffer.Length);
             
-            srcBuffer.WidenInternal(result.Buffer, performLengthCheck: false);
+            srcBuffer.WidenInternal(result.Window, performLengthCheck: false);
             
             return result;
         }
         
-        public static void Widen(this NativeBuffer<uint> srcBuffer, NativeBuffer<ulong> destBuffer)
+        public static void Widen(this MemoryWindow<uint> srcBuffer, MemoryWindow<ulong> destBuffer)
         {
             srcBuffer.WidenInternal(destBuffer, performLengthCheck: true);
         }
         
-        public static void WidenUnsafely(this NativeBuffer<uint> srcBuffer, NativeBuffer<ulong> destBuffer)
+        public static void WidenUnsafely(this MemoryWindow<uint> srcBuffer, MemoryWindow<ulong> destBuffer)
         {
             srcBuffer.WidenInternal(destBuffer, performLengthCheck: false);
         }
         
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static void WidenInternal(
-            this NativeBuffer<uint> srcBuffer,
-            NativeBuffer<ulong> destBuffer,
+            this MemoryWindow<uint> srcBuffer,
+            MemoryWindow<ulong> destBuffer,
             bool performLengthCheck)
         {
             var currentSrcPtr = srcBuffer.Ptr;
@@ -104,7 +104,7 @@ namespace Tokenizers.NET.Helpers
             }
         }
 
-        public static NativeBuffer<uint> NarrowMutating(this NativeBuffer<ulong> srcBuffer)
+        public static MemoryWindow<uint> NarrowMutating(this MemoryWindow<ulong> srcBuffer)
         {
             var reinterpreted = srcBuffer.Cast<uint>();
             
@@ -119,8 +119,8 @@ namespace Tokenizers.NET.Helpers
         }
         
         public static void NarrowNonOverlapping(
-            this NativeBuffer<ulong> srcBuffer,
-            NativeBuffer<uint> destBuffer)
+            this MemoryWindow<ulong> srcBuffer,
+            MemoryWindow<uint> destBuffer)
         {
             NarrowInternal(
                 srcBuffer,
@@ -132,8 +132,8 @@ namespace Tokenizers.NET.Helpers
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static void NarrowInternal(
-            this NativeBuffer<ulong> srcBuffer,
-            NativeBuffer<uint> destBuffer,
+            this MemoryWindow<ulong> srcBuffer,
+            MemoryWindow<uint> destBuffer,
             bool performLengthCheck,
             bool overlapping)
         {

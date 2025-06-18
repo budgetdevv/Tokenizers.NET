@@ -1,0 +1,3 @@
+[submodule "NativeMemory"]
+	path = NativeMemory
+	url = https://github.com/budgetdevv/NativeMemory.git

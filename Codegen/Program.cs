@@ -1,10 +1,9 @@
 ﻿using System.Collections.Generic;
-using System.Net.Http;
 using System.Threading;
 using System.Threading.Tasks;
 using Tokenizers.NET;
-using Tokenizers.NET.Collections;
 using Tokenizers.NET.Outputs;
+using NativeMemory;
 
 namespace Codegen
 {
@@ -49,7 +48,7 @@ namespace Codegen
             
             TokenizeBatch_DISASM(tokenizer, inputs, outputs);
             
-            DisposeTokenizeBatchOutput_DISASM(*outputs.Buffer.Ptr);
+            DisposeTokenizeBatchOutput_DISASM(*outputs.Window.Ptr);
         }
         
         private const MethodImplOptions DISASM_METHOD_IMPL_OPTIONS = MethodImplOptions.NoInlining; // | MethodImplOptions.AggressiveOptimization;
@@ -71,7 +70,7 @@ namespace Codegen
         {
             tokenizer.TokenizeBatchInternal(
                 inputs,
-                outputs.Buffer,
+                outputs.Window,
                 skipLengthCheck: true,
                 addSpecialTokens: true
             );

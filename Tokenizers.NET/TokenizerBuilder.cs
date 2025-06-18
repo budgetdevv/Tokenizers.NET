@@ -2,7 +2,7 @@ using System.IO;
 using System.Net.Http;
 using System.Text.Json;
 using System.Threading.Tasks;
-using Tokenizers.NET.Collections;
+using NativeMemory;
 
 namespace Tokenizers.NET
 {
@@ -143,7 +143,7 @@ namespace Tokenizers.NET
                 (nuint) rawTokenizerDataArr.Length
             );
 
-            var rawTokenizerDataSpan = rawTokenizerData.Buffer.AsSpan();
+            var rawTokenizerDataSpan = rawTokenizerData.Window.AsSpan();
 
             rawTokenizerDataArr.CopyTo(rawTokenizerDataSpan);
 

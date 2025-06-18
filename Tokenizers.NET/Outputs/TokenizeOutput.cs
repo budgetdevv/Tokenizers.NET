@@ -1,77 +1,75 @@
-using System;
-using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
-using Tokenizers.NET.Collections;
+using NativeMemory;
 using Tokenizers.NET.Helpers;
 
 namespace Tokenizers.NET.Outputs
 {
     public interface ITokenizeOutput
     {
-        public NativeBuffer<uint> IDs { get; }
+        public MemoryWindow<uint> IDs { get; }
         
-        public NativeBuffer<uint> AttentionMask { get; }
+        public MemoryWindow<uint> AttentionMask { get; }
         
-        public NativeBuffer<uint> SpecialTokensMask { get; }
+        public MemoryWindow<uint> SpecialTokensMask { get; }
         
-        public NativeBuffer<uint> TokenTypeIDs { get; } 
+        public MemoryWindow<uint> TokenTypeIDs { get; } 
     }
     
     [StructLayout(LayoutKind.Sequential)]
     public readonly struct TokenizeOutputOverflowedToken: ITokenizeOutput
     {
-        public readonly NativeBuffer<uint> IDs;
+        public readonly MemoryWindow<uint> IDs;
 
-        public readonly NativeBuffer<uint> AttentionMask;
+        public readonly MemoryWindow<uint> AttentionMask;
 
-        public readonly NativeBuffer<uint> SpecialTokensMask;
+        public readonly MemoryWindow<uint> SpecialTokensMask;
         
-        public readonly NativeBuffer<uint> TokenTypeIDs;
+        public readonly MemoryWindow<uint> TokenTypeIDs;
         
-        NativeBuffer<uint> ITokenizeOutput.IDs => IDs;
+        MemoryWindow<uint> ITokenizeOutput.IDs => IDs;
         
-        NativeBuffer<uint> ITokenizeOutput.AttentionMask => AttentionMask;
+        MemoryWindow<uint> ITokenizeOutput.AttentionMask => AttentionMask;
         
-        NativeBuffer<uint> ITokenizeOutput.SpecialTokensMask => SpecialTokensMask;
+        MemoryWindow<uint> ITokenizeOutput.SpecialTokensMask => SpecialTokensMask;
         
-        NativeBuffer<uint> ITokenizeOutput.TokenTypeIDs => TokenTypeIDs;
+        MemoryWindow<uint> ITokenizeOutput.TokenTypeIDs => TokenTypeIDs;
     }
     
     [StructLayout(LayoutKind.Sequential)] // Data structures
     public readonly unsafe partial struct TokenizeOutput: ITokenizeOutput, IDisposable
     {
-        public readonly NativeBuffer<uint> IDs;
+        public readonly MemoryWindow<uint> IDs;
 
-        public readonly NativeBuffer<uint> AttentionMask;
+        public readonly MemoryWindow<uint> AttentionMask;
 
-        public readonly NativeBuffer<uint> SpecialTokensMask;
+        public readonly MemoryWindow<uint> SpecialTokensMask;
 
-        public readonly NativeBuffer<uint> TokenTypeIDs;
+        public readonly MemoryWindow<uint> TokenTypeIDs;
         
-        public readonly NativeBuffer<TokenizeOutputOverflowedToken> OverflowingTokens;
+        public readonly MemoryWindow<TokenizeOutputOverflowedToken> OverflowingTokens;
 
         public readonly nint OriginalOutputFreeHandle;
         
         private readonly nint OverflowingTokensFreeHandle;
         
-        NativeBuffer<uint> ITokenizeOutput.IDs => IDs;
+        MemoryWindow<uint> ITokenizeOutput.IDs => IDs;
         
-        NativeBuffer<uint> ITokenizeOutput.AttentionMask => AttentionMask;
+        MemoryWindow<uint> ITokenizeOutput.AttentionMask => AttentionMask;
         
-        NativeBuffer<uint> ITokenizeOutput.SpecialTokensMask => SpecialTokensMask;
+        MemoryWindow<uint> ITokenizeOutput.SpecialTokensMask => SpecialTokensMask;
         
-        NativeBuffer<uint> ITokenizeOutput.TokenTypeIDs => TokenTypeIDs;
+        MemoryWindow<uint> ITokenizeOutput.TokenTypeIDs => TokenTypeIDs;
         
         private interface IGatherFieldAccessor
         {
-            public static abstract NativeBuffer<uint> AccessField<T>(T item)
+            public static abstract MemoryWindow<uint> AccessField<T>(T item)
                 where T: struct, ITokenizeOutput;
         }
 
         private struct AccessIDs: IGatherFieldAccessor
         {
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            public static NativeBuffer<uint> AccessField<T>(T item)
+            public static MemoryWindow<uint> AccessField<T>(T item)
                 where T: struct, ITokenizeOutput
             {
                 return item.IDs;
@@ -81,7 +79,7 @@ namespace Tokenizers.NET.Outputs
         private struct AccessAttentionMask: IGatherFieldAccessor
         {
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            public static NativeBuffer<uint> AccessField<T>(T item)
+            public static MemoryWindow<uint> AccessField<T>(T item)
                 where T: struct, ITokenizeOutput
             {
                 return item.AttentionMask;
@@ -91,7 +89,7 @@ namespace Tokenizers.NET.Outputs
         private struct AccessSpecialTokensMask: IGatherFieldAccessor
         {
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            public static NativeBuffer<uint> AccessField<T>(T item)
+            public static MemoryWindow<uint> AccessField<T>(T item)
                 where T: struct, ITokenizeOutput
             {
                 return item.SpecialTokensMask;
@@ -101,7 +99,7 @@ namespace Tokenizers.NET.Outputs
         private struct AccessTokenTypeIDs: IGatherFieldAccessor
         {
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            public static NativeBuffer<uint> AccessField<T>(T item)
+            public static MemoryWindow<uint> AccessField<T>(T item)
                 where T: struct, ITokenizeOutput
             {
                 return item.TokenTypeIDs;
@@ -113,7 +111,7 @@ namespace Tokenizers.NET.Outputs
     public readonly unsafe partial struct TokenizeOutput
     {
         public void GatherIDsInclusiveOfOverflowing(
-            NativeBuffer<uint> idsBuffer,
+            MemoryWindow<uint> idsBuffer,
             out nuint totalLength)
         {
             GatherIDsInclusiveOfOverflowingCore<AccessIDs>(
@@ -128,7 +126,7 @@ namespace Tokenizers.NET.Outputs
             var idsBuffer = new NativeMemory<uint>(IDs.Length * (OverflowingTokens.Length + 1));
             
             GatherIDsInclusiveOfOverflowingCore<AccessIDs>(
-                idsBuffer.Buffer,
+                idsBuffer.Window,
                 performRangeCheck: false,
                 out _
             );
@@ -137,7 +135,7 @@ namespace Tokenizers.NET.Outputs
         }
         
         public void GatherAttentionMaskInclusiveOfOverflowing(
-            NativeBuffer<uint> attentionMaskBuffer,
+            MemoryWindow<uint> attentionMaskBuffer,
             out nuint totalLength)
         {
             GatherIDsInclusiveOfOverflowingCore<AccessAttentionMask>(
@@ -152,7 +150,7 @@ namespace Tokenizers.NET.Outputs
             var attentionMaskBuffer = new NativeMemory<uint>(AttentionMask.Length * (OverflowingTokens.Length + 1));
             
             GatherIDsInclusiveOfOverflowingCore<AccessAttentionMask>(
-                attentionMaskBuffer.Buffer,
+                attentionMaskBuffer.Window,
                 performRangeCheck: false,
                 out _
             );
@@ -161,7 +159,7 @@ namespace Tokenizers.NET.Outputs
         }
         
         public void GatherSpecialTokensMaskInclusiveOfOverflowing(
-            NativeBuffer<uint> specialTokensMaskBuffer,
+            MemoryWindow<uint> specialTokensMaskBuffer,
             out nuint totalLength)
         {
             GatherIDsInclusiveOfOverflowingCore<AccessSpecialTokensMask>(
@@ -176,7 +174,7 @@ namespace Tokenizers.NET.Outputs
             var specialTokensMaskBuffer = new NativeMemory<uint>(SpecialTokensMask.Length * (OverflowingTokens.Length + 1));
             
             GatherIDsInclusiveOfOverflowingCore<AccessSpecialTokensMask>(
-                specialTokensMaskBuffer.Buffer,
+                specialTokensMaskBuffer.Window,
                 performRangeCheck: false,
                 out _
             );
@@ -185,7 +183,7 @@ namespace Tokenizers.NET.Outputs
         }
         
         public void GatherTokenTypeIDsInclusiveOfOverflowing(
-            NativeBuffer<uint> tokenTypeIDsBuffer,
+            MemoryWindow<uint> tokenTypeIDsBuffer,
             out nuint totalLength)
         {
             GatherIDsInclusiveOfOverflowingCore<AccessTokenTypeIDs>(
@@ -200,7 +198,7 @@ namespace Tokenizers.NET.Outputs
             var tokenTypeIDsBuffer = new NativeMemory<uint>(TokenTypeIDs.Length * (OverflowingTokens.Length + 1));
             
             GatherIDsInclusiveOfOverflowingCore<AccessTokenTypeIDs>(
-                tokenTypeIDsBuffer.Buffer,
+                tokenTypeIDsBuffer.Window,
                 performRangeCheck: false,
                 out _
             );
@@ -210,7 +208,7 @@ namespace Tokenizers.NET.Outputs
         
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private void GatherIDsInclusiveOfOverflowingCore<FieldAccessorT>(
-            NativeBuffer<uint> idsBuffer, 
+            MemoryWindow<uint> idsBuffer, 
             bool performRangeCheck,
             out nuint totalLength)
             where FieldAccessorT: struct, IGatherFieldAccessor
@@ -260,7 +258,7 @@ namespace Tokenizers.NET.Outputs
     public readonly unsafe partial struct TokenizeOutput
     {
         public void GatherAndWidenIDsInclusiveOfOverflowing(
-            NativeBuffer<ulong> idsBuffer, 
+            MemoryWindow<ulong> idsBuffer, 
             out nuint totalLength)
         {
             GatherAndWidenIDsInclusiveOfOverflowingCore<AccessIDs>(
@@ -275,7 +273,7 @@ namespace Tokenizers.NET.Outputs
             var idsBuffer = new NativeMemory<ulong>(IDs.Length * (OverflowingTokens.Length + 1));
             
             GatherAndWidenIDsInclusiveOfOverflowingCore<AccessIDs>(
-                idsBuffer.Buffer,
+                idsBuffer.Window,
                 performRangeCheck: false,
                 out _
             );
@@ -284,7 +282,7 @@ namespace Tokenizers.NET.Outputs
         }
         
         public void GatherAndWidenAttentionMaskInclusiveOfOverflowing(
-            NativeBuffer<ulong> attentionMaskBuffer,
+            MemoryWindow<ulong> attentionMaskBuffer,
             out nuint totalLength)
         {
             GatherAndWidenIDsInclusiveOfOverflowingCore<AccessAttentionMask>(
@@ -299,7 +297,7 @@ namespace Tokenizers.NET.Outputs
             var attentionMaskBuffer = new NativeMemory<ulong>(AttentionMask.Length * (OverflowingTokens.Length + 1));
             
             GatherAndWidenIDsInclusiveOfOverflowingCore<AccessAttentionMask>(
-                attentionMaskBuffer.Buffer,
+                attentionMaskBuffer.Window,
                 performRangeCheck: false,
                 out _
             );
@@ -308,7 +306,7 @@ namespace Tokenizers.NET.Outputs
         }
         
         public void GatherAndWidenSpecialTokensMaskInclusiveOfOverflowing(
-            NativeBuffer<ulong> specialTokensMaskBuffer,
+            MemoryWindow<ulong> specialTokensMaskBuffer,
             out nuint totalLength)
         {
             GatherAndWidenIDsInclusiveOfOverflowingCore<AccessSpecialTokensMask>(
@@ -323,7 +321,7 @@ namespace Tokenizers.NET.Outputs
             var specialTokensMaskBuffer = new NativeMemory<ulong>(SpecialTokensMask.Length * (OverflowingTokens.Length + 1));
             
             GatherAndWidenIDsInclusiveOfOverflowingCore<AccessSpecialTokensMask>(
-                specialTokensMaskBuffer.Buffer,
+                specialTokensMaskBuffer.Window,
                 performRangeCheck: false,
                 out _
             );
@@ -332,7 +330,7 @@ namespace Tokenizers.NET.Outputs
         }
         
         public void GatherAndWidenTokenTypeIDsInclusiveOfOverflowing(
-            NativeBuffer<ulong> tokenTypeIDsBuffer,
+            MemoryWindow<ulong> tokenTypeIDsBuffer,
             out nuint totalLength)
         {
             GatherAndWidenIDsInclusiveOfOverflowingCore<AccessTokenTypeIDs>(
@@ -347,7 +345,7 @@ namespace Tokenizers.NET.Outputs
             var tokenTypeIDsBuffer = new NativeMemory<ulong>(TokenTypeIDs.Length * (OverflowingTokens.Length + 1));
             
             GatherAndWidenIDsInclusiveOfOverflowingCore<AccessTokenTypeIDs>(
-                tokenTypeIDsBuffer.Buffer,
+                tokenTypeIDsBuffer.Window,
                 performRangeCheck: false,
                 out _
             );
@@ -357,7 +355,7 @@ namespace Tokenizers.NET.Outputs
         
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private void GatherAndWidenIDsInclusiveOfOverflowingCore<FieldAccessorT>(
-            NativeBuffer<ulong> idsBuffer, 
+            MemoryWindow<ulong> idsBuffer, 
             bool performRangeCheck,
             out nuint totalLength)
             where FieldAccessorT: struct, IGatherFieldAccessor

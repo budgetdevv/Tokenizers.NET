@@ -1,8 +1,8 @@
 using System.Runtime.InteropServices;
 using Allure.NUnit;
 using FluentAssertions;
+using NativeMemory;
 using Tokenizers.NET;
-using Tokenizers.NET.Collections;
 using Tokenizers.NET.Outputs;
 
 namespace Tests
@@ -43,7 +43,7 @@ namespace Tests
             
             TokenizeOutput tokenizeResult;
             
-            NativeBuffer<TokenizeOutputOverflowedToken> overflowingTokens;
+            MemoryWindow<TokenizeOutputOverflowedToken> overflowingTokens;
 
             nuint numOverflowingTokensSegments;
             
@@ -94,7 +94,7 @@ namespace Tests
 
             using var gatherMemory = new NativeMemory<uint>((nuint) expectedTotalIDLength);
             
-            var gatherBuffer = gatherMemory.Buffer;
+            var gatherBuffer = gatherMemory.Window;
             
             tokenizeResult.GatherIDsInclusiveOfOverflowing(gatherBuffer, out var gatheredLength);
             
@@ -113,7 +113,7 @@ namespace Tests
             tokenizeResult.Dispose();
         }
         
-        private static ulong[] WidenSafely(NativeBuffer<uint> source)
+        private static ulong[] WidenSafely(MemoryWindow<uint> source)
         {
             var sourceSpan = source.AsReadOnlySpan();
             
@@ -140,7 +140,7 @@ namespace Tests
             
             TokenizeOutput tokenizeResult;
             
-            NativeBuffer<TokenizeOutputOverflowedToken> overflowingTokens;
+            MemoryWindow<TokenizeOutputOverflowedToken> overflowingTokens;
 
             nuint numOverflowingTokensSegments;
             
@@ -211,10 +211,10 @@ namespace Tests
             using var specialTokensMaskGatherResult = tokenizeResult.GatherAndWidenSpecialTokensMaskInclusiveOfOverflowing();
             using var tokenTypeIDsGatherResult = tokenizeResult.GatherAndWidenTokenTypeIDsInclusiveOfOverflowing();
             
-            var gatheredIDs = idGatherResult.Buffer.AsSpan();
-            var gatheredAttentionMask = attentionMaskGatherResult.Buffer.AsSpan();
-            var gatheredSpecialTokensMask = specialTokensMaskGatherResult.Buffer.AsSpan();
-            var gatheredTokenTypeIDs = tokenTypeIDsGatherResult.Buffer.AsSpan();
+            var gatheredIDs = idGatherResult.Window.AsSpan();
+            var gatheredAttentionMask = attentionMaskGatherResult.Window.AsSpan();
+            var gatheredSpecialTokensMask = specialTokensMaskGatherResult.Window.AsSpan();
+            var gatheredTokenTypeIDs = tokenTypeIDsGatherResult.Window.AsSpan();
             
             gatheredIDs.SequenceEqual(idsSpan).Should().BeTrue();
             gatheredAttentionMask.SequenceEqual(attentionMaskSpan).Should().BeTrue();
@@ -274,7 +274,7 @@ namespace Tests
 
                 var currentIndex = 0;
                 
-                foreach (var tokenizeResult in tokenizeResults.Buffer)
+                foreach (var tokenizeResult in tokenizeResults.Window)
                 {
                     var ids = tokenizeResult.IDs;
                     
