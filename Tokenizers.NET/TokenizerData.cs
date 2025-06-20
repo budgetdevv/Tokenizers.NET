@@ -71,13 +71,13 @@ namespace Tokenizers.NET
     //             
     // }
     
-    public readonly struct TokenizerData
+    public struct TokenizerData
     {
         [JsonPropertyName("truncation")]
-        public Truncation? Truncation { get; init; }
+        public Truncation? Truncation { get; set; }
         
         [JsonPropertyName("padding")]
-        public Padding? Padding { get; init; }
+        public Padding? Padding { get; set; }
 
         // [JsonPropertyName("added_tokens")]
         // public AddedTokens? AddedTokens { get; init; }
