@@ -20,13 +20,13 @@ namespace Tokenizers.NET
     public struct Padding
     {
         [JsonPropertyName("strategy")]
-        public string Strategy { get; set; }
+        public object? Strategy { get; set; }
 
         [JsonPropertyName("direction")]
-        public string Direction { get; set; }
+        public string? Direction { get; set; }
 
         [JsonPropertyName("max_length")]
-        public int MaxLength { get; set; }
+        public int? MaxLength { get; set; }
 
         [JsonPropertyName("pad_id")]
         public int PadID { get; set; }
@@ -38,7 +38,7 @@ namespace Tokenizers.NET
         public int PadTypeID { get; set; }
 
         [JsonPropertyName("pad_to_multiple_of")]
-        public int PadToMultipleOf { get; set; }
+        public int? PadToMultipleOf { get; set; }
     }
 
     // public struct AddedTokens
