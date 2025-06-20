@@ -1,3 +1,4 @@
+using System.Text.Json;
 using System.Text.Json.Serialization;
 
 namespace Tokenizers.NET
@@ -19,8 +20,67 @@ namespace Tokenizers.NET
             
     public struct Padding
     {
+        [JsonConverter(typeof(Converter))]
+        public abstract class StrategyBase
+        {
+            public sealed class Converter: JsonConverter<StrategyBase>
+            {
+                public override StrategyBase? Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
+                {
+                    if (reader.TokenType == JsonTokenType.String)
+                    {
+                        var value = reader.GetString();
+
+                        if (value == "longest")
+                        {
+                            return new MaxStrategy();
+                        }
+                    }
+
+                    else if (reader.TokenType == JsonTokenType.True)
+                    {
+                        return new MaxStrategy();
+                    }
+
+                    else if (reader.TokenType == JsonTokenType.StartObject)
+                    {
+                        return JsonSerializer.Deserialize<FixedStrategy>(ref reader, options);
+                    }
+
+                    throw new JsonException("Invalid padding strategy format.");
+                }
+
+                public override void Write(Utf8JsonWriter writer, StrategyBase value, JsonSerializerOptions options)
+                {
+                    if (value is FixedStrategy fixedStrategy)
+                    {
+                        JsonSerializer.Serialize(writer, fixedStrategy);
+                    }
+
+                    else if (value is MaxStrategy)
+                    {
+                        writer.WriteStringValue("longest");
+                    }
+
+                    else
+                    {
+                        throw new NotSupportedException($"Unsupported padding strategy type: {value.GetType()}");
+                    }
+                }
+            }
+        }
+
+        public sealed class FixedStrategy(int length): StrategyBase
+        {
+            // Yes, it is named "Fixed" in the JSON, not "fixed"
+            [JsonPropertyName("Fixed")]
+            public int Length { get; set; } = length;
+        }
+
+        public sealed class MaxStrategy: StrategyBase;
+
         [JsonPropertyName("strategy")]
-        public object? Strategy { get; set; }
+        public StrategyBase? Strategy { get; set; }
 
         [JsonPropertyName("direction")]
         public string? Direction { get; set; }
