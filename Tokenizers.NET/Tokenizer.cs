@@ -172,8 +172,8 @@ namespace Tokenizers.NET
             var config = Config = builder.BuildConfig();
             
             var expectedMaxBatches = config.ExpectedMaxBatches;
-            
-            var rawTokenizerData = config.RawTokenizerData.Window;
+
+            using var rawTokenizerData = config.RawTokenizerData;
             
             U8StringBuffers = new PinnedArrayMemory<MemoryWindow<byte>>(
                 (int) expectedMaxBatches,
@@ -183,7 +183,7 @@ namespace Tokenizers.NET
             
             Allocator = new(config);
 
-            TokenizerHandle = TokenizerNativeMethods.AllocateTokenizer(rawTokenizerData);
+            TokenizerHandle = TokenizerNativeMethods.AllocateTokenizer(rawTokenizerData.Window);
         }
         
         public TokenizeOutput Tokenize(string input, bool addSpecialTokens = true)
