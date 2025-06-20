@@ -13,15 +13,15 @@ namespace Tokenizers.NET
     [NoParamlessCtor]
     public readonly unsafe partial struct Tokenizer: IDisposable
     {
+        // Modern cacheline size is either 64 or 128 bytes,
+        // reducing cross-cacheline reads for SIMD instructions.
+        // This should also satisfy the alignment for MemoryWindow<MemoryWindow<byte>>,
+        // enabling us to reinterpret the memory in IDsToTokens() to avoid allocation.
+        private const int ALIGNMENT = 128;
+
         [NoParamlessCtor]
         private readonly partial struct TempFixedAllocator
         {
-            // Modern cacheline size is either 64 or 128 bytes,
-            // reducing cross-cacheline reads for SIMD instructions.
-            // This should also satisfy the alignment for MemoryWindow<MemoryWindow<byte>>,
-            // enabling us to reinterpret the memory in IDsToTokens() to avoid allocation.
-            private const int ALIGNMENT = 128;
-
             // We need to keep a GC reference to it
             // Yes, technically we could malloc, but POH allocation does have its benefits,
             // such as the GC automatically cleaning it up when the entire tokenizer is out of scope.
@@ -155,11 +155,7 @@ namespace Tokenizers.NET
 
         public readonly TokenizerConfig Config;
 
-        // ReSharper disable once NotAccessedField.Local
-        // We need to keep a GC reference to it
-        private readonly MemoryWindow<byte>[] U8StringBuffers;
-        
-        private readonly MemoryWindow<byte>* U8StringBuffersPtr;
+        private readonly PinnedArrayMemory<MemoryWindow<byte>> U8StringBuffers;
         
         private readonly TempFixedAllocator Allocator;
         
@@ -179,11 +175,11 @@ namespace Tokenizers.NET
             
             var rawTokenizerData = config.RawTokenizerData.Window;
             
-            var u8StringBuffers = U8StringBuffers = AllocationHelpers.AllocatePinnedUninitialized<MemoryWindow<byte>>(
-                expectedMaxBatches
+            U8StringBuffers = new PinnedArrayMemory<MemoryWindow<byte>>(
+                (int) expectedMaxBatches,
+                zeroed: false,
+                alignment: ALIGNMENT
             );
-            
-            U8StringBuffersPtr = u8StringBuffers.PinnedArrayToPointer();
             
             Allocator = new(config);
 
@@ -302,7 +298,7 @@ namespace Tokenizers.NET
             var exceedsExpectedMaxBatches = numInputs > Config.ExpectedMaxBatches;
             
             var u8StringsPtr = !exceedsExpectedMaxBatches ?
-                U8StringBuffersPtr :
+                U8StringBuffers.Window.Ptr :
                 new NativeMemory<MemoryWindow<byte>>(numInputs).Window.Ptr;
             
             var allocator = Allocator.GetHandle();
