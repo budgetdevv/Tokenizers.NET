@@ -17,11 +17,30 @@ namespace Tokenizers.NET
         public int Stride { get; set; }
     }
             
-    // public struct Padding
-    // {
-    //     
-    // }
-    //         
+    public struct Padding
+    {
+        [JsonPropertyName("strategy")]
+        public string Strategy { get; set; }
+
+        [JsonPropertyName("direction")]
+        public string Direction { get; set; }
+
+        [JsonPropertyName("max_length")]
+        public int MaxLength { get; set; }
+
+        [JsonPropertyName("pad_id")]
+        public int PadID { get; set; }
+
+        [JsonPropertyName("pad_token")]
+        public string PadToken { get; set; }
+
+        [JsonPropertyName("pad_type_id")]
+        public int PadTypeID { get; set; }
+
+        [JsonPropertyName("pad_to_multiple_of")]
+        public int PadToMultipleOf { get; set; }
+    }
+
     // public struct AddedTokens
     // {
     //             
@@ -57,9 +76,9 @@ namespace Tokenizers.NET
         [JsonPropertyName("truncation")]
         public Truncation? Truncation { get; init; }
         
-        // [JsonPropertyName("padding")]
-        // public Padding? Padding { get; init; }
-        //
+        [JsonPropertyName("padding")]
+        public Padding? Padding { get; init; }
+
         // [JsonPropertyName("added_tokens")]
         // public AddedTokens? AddedTokens { get; init; }
         //
