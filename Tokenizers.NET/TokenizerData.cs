@@ -31,15 +31,10 @@ namespace Tokenizers.NET
                     {
                         var value = reader.GetString();
 
-                        if (value == "longest")
+                        if (value == BatchLongestStrategy.VALUE)
                         {
-                            return new MaxStrategy();
+                            return new BatchLongestStrategy();
                         }
-                    }
-
-                    else if (reader.TokenType == JsonTokenType.True)
-                    {
-                        return new MaxStrategy();
                     }
 
                     else if (reader.TokenType == JsonTokenType.StartObject)
@@ -57,9 +52,9 @@ namespace Tokenizers.NET
                         JsonSerializer.Serialize(writer, fixedStrategy);
                     }
 
-                    else if (value is MaxStrategy)
+                    else if (value is BatchLongestStrategy)
                     {
-                        writer.WriteStringValue("longest");
+                        writer.WriteStringValue(BatchLongestStrategy.VALUE);
                     }
 
                     else
@@ -77,7 +72,10 @@ namespace Tokenizers.NET
             public int Length { get; set; } = length;
         }
 
-        public sealed class MaxStrategy: StrategyBase;
+        public sealed class BatchLongestStrategy: StrategyBase
+        {
+            public const string VALUE = "BatchLongest";
+        }
 
         [JsonPropertyName("strategy")]
         public StrategyBase? Strategy { get; set; }
