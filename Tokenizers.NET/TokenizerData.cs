@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 
@@ -154,5 +155,8 @@ namespace Tokenizers.NET
         //
         // [JsonPropertyName("model")]
         // public Model? Model { get; init; }
+
+        [JsonExtensionData]
+        public Dictionary<string, JsonElement> ExtensionData { get; set; }
     }
 }
