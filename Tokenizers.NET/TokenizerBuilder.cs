@@ -27,6 +27,8 @@ namespace Tokenizers.NET
 
         internal byte[]? RawTokenizerData = null;
 
+        internal Func<TokenizerData, TokenizerData>? ModifyTokenizerConfigFunc = null;
+
         public TokenizerBuilder SetExpectedMaxInputLength(uint expectedMaxInputLength)
         {
             ExpectedMaxInputLength = expectedMaxInputLength;
@@ -97,6 +99,12 @@ namespace Tokenizers.NET
             return this;
         }
 
+        public TokenizerBuilder ModifyTokenizerConfig(Func<TokenizerData, TokenizerData> modifyTokenizerConfigFunc)
+        {
+            ModifyTokenizerConfigFunc = modifyTokenizerConfigFunc;
+            return this;
+        }
+
         internal TokenizerConfig BuildConfig()
         {
             return new(this);
@@ -137,7 +145,20 @@ namespace Tokenizers.NET
             // Let it throw if both are null
             rawTokenizerDataArr ??= File.ReadAllBytes(tokenizerJsonPath!);
 
-            // TODO: Consider mmap instead of heap allocation.
+            var tokenizerData = JsonSerializer.Deserialize<TokenizerData>(
+                rawTokenizerDataArr
+            );
+
+            var modifyFunc = builder.ModifyTokenizerConfigFunc;
+
+            if (modifyFunc != null)
+            {
+                tokenizerData = modifyFunc(tokenizerData);
+
+                rawTokenizerDataArr = JsonSerializer.SerializeToUtf8Bytes(
+                    tokenizerData
+                );
+            }
 
             var rawTokenizerData = RawTokenizerData = new(
                 (nuint) rawTokenizerDataArr.Length
@@ -146,8 +167,6 @@ namespace Tokenizers.NET
             var rawTokenizerDataSpan = rawTokenizerData.Window.AsSpan();
 
             rawTokenizerDataArr.CopyTo(rawTokenizerDataSpan);
-
-            var tokenizerData = JsonSerializer.Deserialize<TokenizerData>(rawTokenizerDataSpan);
 
             var truncation = Truncation = tokenizerData.Truncation;
 
