@@ -15,9 +15,23 @@ namespace Sample
                 }
             });
         }
+
+        private static string GenerateString(string val, int length)
+        {
+            var accumulator = string.Empty;
+
+            for (var i = 0; i < length; i++)
+            {
+                accumulator += val;
+            }
+
+            return accumulator;
+        }
         
         private static async Task Main(string[] args)
         {
+            const uint TRUNCATE_LENGTH = 16;
+
             var tokenizer = (await new TokenizerBuilder()
                 .SetExpectedMaxBatches(1024)
                 .SetExpectedMaxInputLength(16)
@@ -28,12 +42,11 @@ namespace Sample
                     x.Truncation = new()
                     {
                         Direction = "Right",
-                        MaxLength = 16,
+                        MaxLength = TRUNCATE_LENGTH,
                         Strategy = "LongestFirst",
                         Stride = 0
                     };
 
-                    x.Truncation = null;
                     x.Padding = null;
                 })
                 .Build();
@@ -45,10 +58,17 @@ namespace Sample
                 // "Sunset",
                 // "I'm fine, thank you!",
                 // "I love C#!",
-                GenerateString('H', 100),
+                // We use a special token to ensure that it doesn't get merged
+                // E.x. A length of 16 will result in 16 IDs, no lesser
+                GenerateString("[CLS]", length: 16),
             ];
 
-            var outputs = tokenizer.TokenizeBatch(inputTexts);
+            var outputs = tokenizer.TokenizeBatch(
+                inputTexts,
+                // We disable adding special tokens,
+                // so that we output exactly the equivalent number of IDs as the length param stipulated in GenerateString()
+                addSpecialTokens: false
+            );
             
             var outputSpan = outputs.Window.AsSpan();
 
