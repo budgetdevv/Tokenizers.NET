@@ -42,7 +42,7 @@ namespace Tokenizers.NET
                 Debug.Assert(ALIGNMENT % sizeof(MemoryWindow<MemoryWindow<byte>>) == 0);
             }
             
-            public TempFixedAllocator(TokenizerConfig config)
+            public TempFixedAllocator(in TokenizerConfig config)
             {
                 var expectedMaxBatches = config.ExpectedMaxBatches.ToSignedUnchecked();
 
@@ -169,11 +169,9 @@ namespace Tokenizers.NET
 
         internal Tokenizer(TokenizerBuilder builder)
         {
-            var config = Config = builder.BuildConfig();
+            var config = Config = builder.BuildConfig(out var rawTokenizerData);
             
             var expectedMaxBatches = config.ExpectedMaxBatches;
-
-            using var rawTokenizerData = config.RawTokenizerData;
             
             U8StringBuffers = new PinnedArrayMemory<MemoryWindow<byte>>(
                 (int) expectedMaxBatches,
@@ -181,9 +179,14 @@ namespace Tokenizers.NET
                 alignment: ALIGNMENT
             );
             
-            Allocator = new(config);
+            Allocator = new(in config);
 
-            TokenizerHandle = TokenizerNativeMethods.AllocateTokenizer(rawTokenizerData.Window);
+            // We dispose the raw data after allocating the tokenizer,
+            // because the tokenizer itself would have been initialized with the raw data.
+            using (rawTokenizerData)
+            {
+                TokenizerHandle = TokenizerNativeMethods.AllocateTokenizer(rawTokenizerData.Window);
+            }
         }
         
         public TokenizeOutput Tokenize(string input, bool addSpecialTokens = true)

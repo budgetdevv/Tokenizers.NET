@@ -105,9 +105,39 @@ namespace Tokenizers.NET
             return this;
         }
 
-        internal TokenizerConfig BuildConfig()
+        internal TokenizerConfig BuildConfig(out NativeMemory<byte> rawTokenizerData)
         {
-            return new(this);
+            var tokenizerJsonPath = TokenizerJsonPath;
+
+            var rawTokenizerDataArr = RawTokenizerData;
+
+            // Let it throw if both are null
+            rawTokenizerDataArr ??= File.ReadAllBytes(tokenizerJsonPath!);
+
+            var tokenizerData = JsonSerializer.Deserialize<TokenizerData>(
+                rawTokenizerDataArr
+            )!;
+
+            var modifyFunc = ModifyTokenizerConfigFunc;
+
+            if (modifyFunc != null)
+            {
+                tokenizerData = modifyFunc(tokenizerData);
+
+                rawTokenizerDataArr = JsonSerializer.SerializeToUtf8Bytes(
+                    tokenizerData
+                );
+            }
+
+            rawTokenizerData = new(
+                (nuint) rawTokenizerDataArr.Length
+            );
+
+            var rawTokenizerDataSpan = rawTokenizerData.Window.AsSpan();
+
+            rawTokenizerDataArr.CopyTo(rawTokenizerDataSpan);
+
+            return new(this, tokenizerData);
         }
 
         public Tokenizer Build()
@@ -122,15 +152,11 @@ namespace Tokenizers.NET
 
         public readonly ExceedExpectedMaxBatchesBehavior ExceedExpectedMaxBatchesBehavior;
 
-        public readonly string? TokenizerJsonPath;
-
-        public readonly NativeMemory<byte> RawTokenizerData;
-
         public readonly Truncation? Truncation;
 
-        public readonly bool Truncates;
+        public bool Truncates => Truncation != null;
 
-        internal TokenizerConfig(TokenizerBuilder builder)
+        internal TokenizerConfig(TokenizerBuilder builder, TokenizerData tokenizerData)
         {
             ExpectedMaxInputLength = builder.ExpectedMaxInputLength;
 
@@ -138,39 +164,7 @@ namespace Tokenizers.NET
 
             ExceedExpectedMaxBatchesBehavior = builder.ExceedExpectedMaxBatchesBehavior;
 
-            var tokenizerJsonPath = TokenizerJsonPath = builder.TokenizerJsonPath;
-
-            var rawTokenizerDataArr = builder.RawTokenizerData;
-
-            // Let it throw if both are null
-            rawTokenizerDataArr ??= File.ReadAllBytes(tokenizerJsonPath!);
-
-            var tokenizerData = JsonSerializer.Deserialize<TokenizerData>(
-                rawTokenizerDataArr
-            );
-
-            var modifyFunc = builder.ModifyTokenizerConfigFunc;
-
-            if (modifyFunc != null)
-            {
-                tokenizerData = modifyFunc(tokenizerData);
-
-                rawTokenizerDataArr = JsonSerializer.SerializeToUtf8Bytes(
-                    tokenizerData
-                );
-            }
-
-            var rawTokenizerData = RawTokenizerData = new(
-                (nuint) rawTokenizerDataArr.Length
-            );
-
-            var rawTokenizerDataSpan = rawTokenizerData.Window.AsSpan();
-
-            rawTokenizerDataArr.CopyTo(rawTokenizerDataSpan);
-
-            var truncation = Truncation = tokenizerData.Truncation;
-
-            Truncates = truncation != null;
+            Truncation = tokenizerData.Truncation;
         }
     }
 }
