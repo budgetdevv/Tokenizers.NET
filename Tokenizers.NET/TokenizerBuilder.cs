@@ -19,15 +19,15 @@ namespace Tokenizers.NET
             "TokenizersJSONCache"
         );
 
+        internal ExceedExpectedMaxBatchesBehavior ExceedExpectedMaxBatchesBehavior = ExceedExpectedMaxBatchesBehavior.AllocateBuffer;
+
         internal uint ExpectedMaxInputLength = 1024, ExpectedMaxBatches = 16;
 
-        public ExceedExpectedMaxBatchesBehavior ExceedExpectedMaxBatchesBehavior = ExceedExpectedMaxBatchesBehavior.AllocateBuffer;
+        private string? TokenizerJsonPath = null;
 
-        internal string? TokenizerJsonPath = null;
+        private byte[]? RawTokenizerData = null;
 
-        internal byte[]? RawTokenizerData = null;
-
-        internal Func<TokenizerData, TokenizerData>? ModifyTokenizerConfigFunc = null;
+        private Func<TokenizerData, TokenizerData>? ModifyTokenizerConfigFunc = null;
 
         public TokenizerBuilder SetExpectedMaxInputLength(uint expectedMaxInputLength)
         {
