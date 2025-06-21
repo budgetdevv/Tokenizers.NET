@@ -10,13 +10,13 @@ namespace Tokenizers.NET
         public string Direction { get; set; }
         
         [JsonPropertyName("max_length")]
-        public int MaxLength { get; set; }
+        public uint MaxLength { get; set; }
         
         [JsonPropertyName("strategy")]
         public string Strategy { get; set; }
         
         [JsonPropertyName("stride")]
-        public int Stride { get; set; }
+        public uint Stride { get; set; }
     }
             
     public sealed class Padding
