@@ -1,26 +1,92 @@
 using System.Collections.Generic;
+using System.Runtime.Serialization;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 
 namespace Tokenizers.NET
 {
-    public sealed class Truncation
+    // Note that Rust uses usize for some of the fields,
+    // which is the equivalent of nuint in C#.
+
+    // However, serializing to nuint is not supported,
+    // so we assume "worst" case and use ulong instead.
+
+    // It should successfully deserialize into usize.
+
+    [JsonConverter(typeof(JsonStringEnumConverter))]
+    public enum TruncationDirection
     {
+        // https://docs.rs/tokenizers/latest/tokenizers/utils/truncation/enum.TruncationDirection.html
+
+        // Avoid using nameof() here, in case we decide to change the enum names in the future
+
+        [EnumMember(Value = "Left")]
+        Left,
+        [EnumMember(Value = "Right")]
+        Right
+    }
+
+    [JsonConverter(typeof(JsonStringEnumConverter))]
+    public enum TruncationStrategy
+    {
+        // https://docs.rs/tokenizers/latest/tokenizers/utils/truncation/enum.TruncationStrategy.html
+
+        // Avoid using nameof() here, in case we decide to change the enum names in the future
+
+        [EnumMember(Value = "LongestFirst")]
+        LongestFirst,
+        [EnumMember(Value = "OnlyFirst")]
+        OnlyFirst,
+        [EnumMember(Value = "OnlySecond")]
+        OnlySecond,
+    }
+
+    public sealed class Truncation(
+        ulong maxLength,
+        ulong stride = 0,
+        TruncationDirection direction = TruncationDirection.Right,
+        TruncationStrategy strategy = TruncationStrategy.LongestFirst)
+    {
+        // https://docs.rs/tokenizers/latest/tokenizers/utils/truncation/struct.TruncationParams.html
+        // For default values: https://huggingface.co/docs/tokenizers/en/api/tokenizer#tokenizers.Tokenizer.enable_truncation
+
         [JsonPropertyName("direction")]
-        public string Direction { get; set; }
-        
+        public TruncationDirection Direction { get; set; } = direction;
+
         [JsonPropertyName("max_length")]
-        public uint MaxLength { get; set; }
-        
+        public ulong MaxLength { get; set; } = maxLength;
+
         [JsonPropertyName("strategy")]
-        public string Strategy { get; set; }
-        
+        public TruncationStrategy Strategy { get; set; } = strategy;
+
         [JsonPropertyName("stride")]
-        public uint Stride { get; set; }
+        public ulong Stride { get; set; } = stride;
+    }
+
+    [JsonConverter(typeof(JsonStringEnumConverter))]
+    public enum PaddingDirection
+    {
+        // https://docs.rs/tokenizers/latest/tokenizers/utils/padding/enum.PaddingDirection.html
+
+        // Avoid using nameof() here, in case we decide to change the enum names in the future
+
+        [EnumMember(Value = "Left")]
+        Left,
+        [EnumMember(Value = "Right")]
+        Right
     }
             
-    public sealed class Padding
+    public sealed class Padding(
+        Padding.StrategyBase? strategy,
+        PaddingDirection direction = PaddingDirection.Right,
+        int? padToMultipleOf = null,
+        int padID = 0,
+        int padTypeID = 0,
+        string padToken = "[PAD]")
     {
+        // https://docs.rs/tokenizers/latest/tokenizers/utils/padding/struct.PaddingParams.html
+        // For default values: https://huggingface.co/docs/tokenizers/en/api/tokenizer#tokenizers.Tokenizer.enable_padding
+
         [JsonConverter(typeof(Converter))]
         public abstract class StrategyBase
         {
@@ -66,11 +132,11 @@ namespace Tokenizers.NET
             }
         }
 
-        public sealed class FixedStrategy(int length): StrategyBase
+        public sealed class FixedStrategy(int maxLength): StrategyBase
         {
             // Yes, it is named "Fixed" in the JSON, not "fixed"
             [JsonPropertyName("Fixed")]
-            public int Length { get; set; } = length;
+            public int MaxLength { get; set; } = maxLength;
         }
 
         public sealed class BatchLongestStrategy: StrategyBase
@@ -78,26 +144,27 @@ namespace Tokenizers.NET
             public const string VALUE = "BatchLongest";
         }
 
+        public static readonly BatchLongestStrategy
+            BATCH_LONGEST_STRATEGY = new(),
+            DEFAULT_STRATEGY = BATCH_LONGEST_STRATEGY;
+
         [JsonPropertyName("strategy")]
-        public StrategyBase? Strategy { get; set; }
+        public StrategyBase? Strategy { get; set; } = strategy ?? DEFAULT_STRATEGY;
 
         [JsonPropertyName("direction")]
-        public string? Direction { get; set; }
-
-        [JsonPropertyName("max_length")]
-        public int? MaxLength { get; set; }
-
-        [JsonPropertyName("pad_id")]
-        public int PadID { get; set; }
-
-        [JsonPropertyName("pad_token")]
-        public string PadToken { get; set; }
-
-        [JsonPropertyName("pad_type_id")]
-        public int PadTypeID { get; set; }
+        public PaddingDirection Direction { get; set; } = direction;
 
         [JsonPropertyName("pad_to_multiple_of")]
-        public int? PadToMultipleOf { get; set; }
+        public int? PadToMultipleOf { get; set; } = padToMultipleOf;
+
+        [JsonPropertyName("pad_id")]
+        public int PadID { get; set; } = padID;
+
+        [JsonPropertyName("pad_type_id")]
+        public int PadTypeID { get; set; } = padTypeID;
+
+        [JsonPropertyName("pad_token")]
+        public string PadToken { get; set; } = padToken;
     }
 
     public sealed class AddedToken(
@@ -109,8 +176,11 @@ namespace Tokenizers.NET
         bool normalized = true,
         bool special = false)
     {
-        // https://huggingface.co/docs/tokenizers/en/api/added-tokens#tokenizers.AddedToken
+        // https://docs.rs/tokenizers/latest/tokenizers/tokenizer/struct.AddedToken.html
+        // For default values: https://huggingface.co/docs/tokenizers/v0.20.3/en/api/added-tokens#tokenizers.AddedToken
 
+        // This field seem to have no effect, but include it for completeness.
+        // ( I noticed that it is present in some tokenizer.json )
         [JsonPropertyName("id")]
         public uint ID { get; set; } = id;
 
@@ -132,31 +202,6 @@ namespace Tokenizers.NET
         [JsonPropertyName("special")]
         public bool Special { get; set; } = special;
     }
-
-    // public sealed class Normalizer
-    // {
-    //
-    // }
-    //
-    // public sealed class PreTokenizer
-    // {
-    //
-    // }
-    //
-    // public sealed class PostProcessor
-    // {
-    //
-    // }
-    //
-    // public sealed class Decoder
-    // {
-    //
-    // }
-    //
-    // public sealed class Model
-    // {
-    //
-    // }
     
     public sealed class TokenizerData
     {
@@ -184,8 +229,38 @@ namespace Tokenizers.NET
         // [JsonPropertyName("model")]
         // public Model? Model { get; set; }
 
+        // This is to ensure we do not lose any additional fields
+        // that are not explicitly defined in our TokenizerData structure.
+        // This is paramount since we serialize the values back to JSON.
         [JsonInclude]
         [JsonExtensionData]
         private Dictionary<string, JsonElement> ExtensionData { get; set; }
     }
+
+    // TODO: Implement these
+
+    // public sealed class Normalizer
+    // {
+    //
+    // }
+    //
+    // public sealed class PreTokenizer
+    // {
+    //
+    // }
+    //
+    // public sealed class PostProcessor
+    // {
+    //
+    // }
+    //
+    // public sealed class Decoder
+    // {
+    //
+    // }
+    //
+    // public sealed class Model
+    // {
+    //
+    // }
 }

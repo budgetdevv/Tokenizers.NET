@@ -39,15 +39,8 @@ namespace Sample
                 .DownloadFromHuggingFaceRepoAsync("TrumpMcDonaldz/OverflowingTokenizer"))
                 .ModifyTokenizerConfig((ref TokenizerData x) =>
                 {
-                    x.Truncation = new()
-                    {
-                        Direction = "Right",
-                        MaxLength = TRUNCATE_LENGTH,
-                        Strategy = "LongestFirst",
-                        Stride = 0
-                    };
-
-                    x.Padding = null;
+                    x.Truncation = new(maxLength: TRUNCATE_LENGTH);
+                    x.Padding = new(strategy: Padding.BATCH_LONGEST_STRATEGY);
                 })
                 .Build();
 
