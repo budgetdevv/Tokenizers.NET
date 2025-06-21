@@ -29,7 +29,8 @@ jobs:
           github-token: ${{ secrets.GITHUB_TOKEN }}
         env:
           DEBUG: "true"
-          
+
+
   test-and-publish:
     name: Test and Publish NuGet
     runs-on: macos-latest
@@ -50,14 +51,25 @@ jobs:
 
       - name: Test
         run: dotnet test --framework net${{ vars.DOTNET_VERSION }}.0 --no-restore /p:SetupGHTestWorkflow=true
-        
+
+      - name: Check if commit includes [ Publish ]
+        id: publish_check
+        run: |
+          if echo "${{ github.event.head_commit.message }}" | grep -q "\[ Publish \]"; then
+            echo "should_publish=true" >> $GITHUB_OUTPUT
+          else
+            echo "should_publish=false" >> $GITHUB_OUTPUT
+          fi
+
       - name: Get short commit SHA
         id: vars
+        if: steps.publish_check.outputs.should_publish == 'true'
         run: echo "COMMIT_SHA=$(git rev-parse --short HEAD)" >> $GITHUB_OUTPUT
 
       # https://stackoverflow.com/questions/77882485/github-actions-resource-not-accessible-by-integration 
       - uses: actions/create-github-app-token@v1
         id: app-token
+        if: steps.publish_check.outputs.should_publish == 'true'
         with:
           # required
           app-id: ${{ secrets.APP_ID }}
@@ -67,6 +79,7 @@ jobs:
         id: bump_version
         env:
           GH_TOKEN: ${{ steps.app-token.outputs.token }}
+        if: steps.publish_check.outputs.should_publish == 'true'
         run: |
           CURRENT_ALPHA_VERSION_NUMBER=$(gh variable get ALPHA_VERSION_NUMBER)
           NEW_ALPHA_VERSION_NUMBER=$((CURRENT_ALPHA_VERSION_NUMBER + 1))
@@ -75,21 +88,25 @@ jobs:
       - name: Update ALPHA_VERSION_NUMBER in repository variable
         env:
           GH_TOKEN: ${{ steps.app-token.outputs.token }}
+        if: steps.publish_check.outputs.should_publish == 'true'
         run: |
           gh variable set ALPHA_VERSION_NUMBER -b "${{ steps.bump_version.outputs.NEW_ALPHA_VERSION_NUMBER }}"
 
       - name: Set Alpha Version
         id: set_version
+        if: steps.publish_check.outputs.should_publish == 'true'
         run: |
           ALPHA_VERSION=alpha.${{ steps.bump_version.outputs.NEW_ALPHA_VERSION_NUMBER }}-${{ steps.vars.outputs.COMMIT_SHA }}
           echo "ALPHA_VERSION=$ALPHA_VERSION" >> $GITHUB_OUTPUT
 
       - name: Build NuGet package
         working-directory: Tokenizers.NET
+        if: steps.publish_check.outputs.should_publish == 'true'
         run: dotnet pack -c Release -v:m --no-restore /p:DownloadNativeFiles=true /p:AlphaVersion=${{ steps.set_version.outputs.ALPHA_VERSION }}
 
       - name: Publish NuGet package
         working-directory: Tokenizers.NET
+        if: steps.publish_check.outputs.should_publish == 'true'
         run: dotnet nuget push -s https://api.nuget.org/v3/index.json -k ${{ secrets.NUGET_API_KEY }} --skip-duplicate bin/Release/*.nupkg
         
       - name: Upload Allure Results
