@@ -100,11 +100,39 @@ namespace Tokenizers.NET
         public int? PadToMultipleOf { get; set; }
     }
 
-    // public sealed class AddedTokens
-    // {
-    //
-    // }
-    //
+    public sealed class AddedToken(
+        uint id,
+        string content,
+        bool singleWord = false,
+        bool leftStrip = false,
+        bool rightStrip = false,
+        bool normalized = true,
+        bool special = false)
+    {
+        // https://huggingface.co/docs/tokenizers/en/api/added-tokens#tokenizers.AddedToken
+
+        [JsonPropertyName("id")]
+        public uint ID { get; set; } = id;
+
+        [JsonPropertyName("content")]
+        public string Content { get; set; } = content;
+
+        [JsonPropertyName("single_word")]
+        public bool SingleWord { get; set; } = singleWord;
+
+        [JsonPropertyName("lstrip")]
+        public bool LeftStrip { get; set; } = leftStrip;
+
+        [JsonPropertyName("rstrip")]
+        public bool RightStrip { get; set; } = rightStrip;
+
+        [JsonPropertyName("normalized")]
+        public bool Normalized { get; set; } = normalized;
+
+        [JsonPropertyName("special")]
+        public bool Special { get; set; } = special;
+    }
+
     // public sealed class Normalizer
     // {
     //
@@ -138,23 +166,23 @@ namespace Tokenizers.NET
         [JsonPropertyName("padding")]
         public Padding? Padding { get; set; }
 
-        // [JsonPropertyName("added_tokens")]
-        // public AddedTokens? AddedTokens { get; init; }
-        //
+        [JsonPropertyName("added_tokens")]
+        public List<AddedToken> AddedTokens { get; set; }
+
         // [JsonPropertyName("normalizer")]
-        // public Normalizer? Normalizer { get; init; }
+        // public Normalizer? Normalizer { get; set; }
         //
         // [JsonPropertyName("pre_tokenizer")]
-        // public PreTokenizer? PreTokenizer { get; init; }
+        // public PreTokenizer? PreTokenizer { get; set; }
         //
         // [JsonPropertyName("post_processor")]
-        // public PostProcessor? PostProcessor { get; init; }
+        // public PostProcessor? PostProcessor { get; set; }
         //
         // [JsonPropertyName("decoder")]
-        // public Decoder? Decoder { get; init; }
+        // public Decoder? Decoder { get; set; }
         //
         // [JsonPropertyName("model")]
-        // public Model? Model { get; init; }
+        // public Model? Model { get; set; }
 
         [JsonInclude]
         [JsonExtensionData]
