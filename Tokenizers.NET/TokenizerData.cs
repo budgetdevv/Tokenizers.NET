@@ -4,7 +4,7 @@ using System.Text.Json.Serialization;
 
 namespace Tokenizers.NET
 {
-    public struct Truncation
+    public sealed class Truncation
     {
         [JsonPropertyName("direction")]
         public string Direction { get; set; }
@@ -19,7 +19,7 @@ namespace Tokenizers.NET
         public int Stride { get; set; }
     }
             
-    public struct Padding
+    public sealed class Padding
     {
         [JsonConverter(typeof(Converter))]
         public abstract class StrategyBase
@@ -100,37 +100,37 @@ namespace Tokenizers.NET
         public int? PadToMultipleOf { get; set; }
     }
 
-    // public struct AddedTokens
+    // public sealed class AddedTokens
     // {
-    //             
+    //
     // }
-    //         
-    // public struct Normalizer
+    //
+    // public sealed class Normalizer
     // {
-    //             
+    //
     // }
-    //         
-    // public struct PreTokenizer
+    //
+    // public sealed class PreTokenizer
     // {
-    //             
+    //
     // }
-    //         
-    // public struct PostProcessor
+    //
+    // public sealed class PostProcessor
     // {
-    //             
+    //
     // }
-    //         
-    // public struct Decoder
+    //
+    // public sealed class Decoder
     // {
-    //             
+    //
     // }
-    //         
-    // public struct Model
+    //
+    // public sealed class Model
     // {
-    //             
+    //
     // }
     
-    public struct TokenizerData
+    public sealed class TokenizerData
     {
         [JsonPropertyName("truncation")]
         public Truncation? Truncation { get; set; }
@@ -156,7 +156,8 @@ namespace Tokenizers.NET
         // [JsonPropertyName("model")]
         // public Model? Model { get; init; }
 
+        [JsonInclude]
         [JsonExtensionData]
-        public Dictionary<string, JsonElement> ExtensionData { get; set; }
+        private Dictionary<string, JsonElement> ExtensionData { get; set; }
     }
 }
