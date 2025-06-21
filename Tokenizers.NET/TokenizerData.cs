@@ -79,9 +79,9 @@ namespace Tokenizers.NET
     public sealed class Padding(
         Padding.StrategyBase? strategy,
         PaddingDirection direction = PaddingDirection.Right,
-        int? padToMultipleOf = null,
-        int padID = 0,
-        int padTypeID = 0,
+        ulong? padToMultipleOf = null,
+        uint padID = 0,
+        uint padTypeID = 0,
         string padToken = "[PAD]")
     {
         // https://docs.rs/tokenizers/latest/tokenizers/utils/padding/struct.PaddingParams.html
@@ -132,11 +132,11 @@ namespace Tokenizers.NET
             }
         }
 
-        public sealed class FixedStrategy(int maxLength): StrategyBase
+        public sealed class FixedStrategy(ulong maxLength): StrategyBase
         {
             // Yes, it is named "Fixed" in the JSON, not "fixed"
             [JsonPropertyName("Fixed")]
-            public int MaxLength { get; set; } = maxLength;
+            public ulong MaxLength { get; set; } = maxLength;
         }
 
         public sealed class BatchLongestStrategy: StrategyBase
@@ -155,13 +155,13 @@ namespace Tokenizers.NET
         public PaddingDirection Direction { get; set; } = direction;
 
         [JsonPropertyName("pad_to_multiple_of")]
-        public int? PadToMultipleOf { get; set; } = padToMultipleOf;
+        public ulong? PadToMultipleOf { get; set; } = padToMultipleOf;
 
         [JsonPropertyName("pad_id")]
-        public int PadID { get; set; } = padID;
+        public uint PadID { get; set; } = padID;
 
         [JsonPropertyName("pad_type_id")]
-        public int PadTypeID { get; set; } = padTypeID;
+        public uint PadTypeID { get; set; } = padTypeID;
 
         [JsonPropertyName("pad_token")]
         public string PadToken { get; set; } = padToken;
