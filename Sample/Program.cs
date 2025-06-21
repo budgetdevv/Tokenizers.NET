@@ -23,6 +23,12 @@ namespace Sample
                 .SetExpectedMaxInputLength(16)
                 .SetExceedExpectedMaxBatchesBehavior(ExceedExpectedMaxBatchesBehavior.AllocateBuffer)
                 .DownloadFromHuggingFaceRepoAsync("TrumpMcDonaldz/OverflowingTokenizer"))
+                .ModifyTokenizerConfig(x =>
+                {
+                    x.Padding = null;
+
+                    return x;
+                })
                 .Build();
 
             Console.WriteLine($"Truncates: {tokenizer.IsTruncating}\n");
@@ -43,7 +49,7 @@ namespace Sample
             
             foreach (var token in outputSpan)
             {
-                const bool TEST_OVERFLOW = false;
+                const bool TEST_OVERFLOW = true;
                 
                 if (TEST_OVERFLOW)
                 {
@@ -51,20 +57,36 @@ namespace Sample
                     
                     foreach (var overflow in token.OverflowingTokens.AsReadOnlySpan())
                     {
-                        Console.WriteLine(
-                        $"""
-                        Overflow IDs {overflowIndex}: {overflow.IDs.AsReadOnlySpan().GetSpanPrintString()}
-                        
-                        Overflow Attention Mask {overflowIndex}: {overflow.AttentionMask.AsReadOnlySpan().GetSpanPrintString()}
-                        
-                        Overflow Special Tokens Mask {overflowIndex}: {overflow.SpecialTokensMask.AsReadOnlySpan().GetSpanPrintString()}
-                        
-                        Overflow Token Type IDs {overflowIndex}: {overflow.TokenTypeIDs.AsReadOnlySpan().GetSpanPrintString()}
-                        
-                        Overflow {overflowIndex} length: {overflow.IDs.Length}
-                        
-                        """);
-                        
+                        const bool SIMPLIFY = true;
+
+                        if (SIMPLIFY)
+                        {
+                            Console.WriteLine(
+                            $"""
+                            Overflow IDs {overflowIndex}: {overflow.IDs.AsReadOnlySpan().GetSpanPrintString()}
+                            
+                            Overflow {overflowIndex} length: {overflow.IDs.Length}
+
+                            """);
+                        }
+
+                        else
+                        {
+                            Console.WriteLine(
+                            $"""
+                            Overflow IDs {overflowIndex}: {overflow.IDs.AsReadOnlySpan().GetSpanPrintString()}
+
+                            Overflow Attention Mask {overflowIndex}: {overflow.AttentionMask.AsReadOnlySpan().GetSpanPrintString()}
+
+                            Overflow Special Tokens Mask {overflowIndex}: {overflow.SpecialTokensMask.AsReadOnlySpan().GetSpanPrintString()}
+
+                            Overflow Token Type IDs {overflowIndex}: {overflow.TokenTypeIDs.AsReadOnlySpan().GetSpanPrintString()}
+
+                            Overflow {overflowIndex} length: {overflow.IDs.Length}
+
+                            """);
+                        }
+
                         overflowIndex++;
                     }
                 }
