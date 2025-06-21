@@ -19,6 +19,8 @@ namespace Tokenizers.NET
             "TokenizersJSONCache"
         );
 
+        public delegate void ModifyTokenizerConfigAction(ref TokenizerData tokenizerData);
+
         internal ExceedExpectedMaxBatchesBehavior ExceedExpectedMaxBatchesBehavior = ExceedExpectedMaxBatchesBehavior.AllocateBuffer;
 
         internal uint ExpectedMaxInputLength = 1024, ExpectedMaxBatches = 16;
@@ -27,7 +29,7 @@ namespace Tokenizers.NET
 
         private byte[]? RawTokenizerData = null;
 
-        private Func<TokenizerData, TokenizerData>? ModifyTokenizerConfigFunc = null;
+        private ModifyTokenizerConfigAction? ModifyTokenizerConfigAct = null;
 
         public TokenizerBuilder SetExpectedMaxInputLength(uint expectedMaxInputLength)
         {
@@ -99,9 +101,9 @@ namespace Tokenizers.NET
             return this;
         }
 
-        public TokenizerBuilder ModifyTokenizerConfig(Func<TokenizerData, TokenizerData> modifyTokenizerConfigFunc)
+        public TokenizerBuilder ModifyTokenizerConfig(ModifyTokenizerConfigAction modifyTokenizerConfigAct)
         {
-            ModifyTokenizerConfigFunc = modifyTokenizerConfigFunc;
+            ModifyTokenizerConfigAct = modifyTokenizerConfigAct;
             return this;
         }
 
@@ -118,11 +120,11 @@ namespace Tokenizers.NET
                 rawTokenizerDataArr
             )!;
 
-            var modifyFunc = ModifyTokenizerConfigFunc;
+            var modifyFunc = ModifyTokenizerConfigAct;
 
             if (modifyFunc != null)
             {
-                tokenizerData = modifyFunc(tokenizerData);
+                modifyFunc(ref tokenizerData);
 
                 rawTokenizerDataArr = JsonSerializer.SerializeToUtf8Bytes(
                     tokenizerData

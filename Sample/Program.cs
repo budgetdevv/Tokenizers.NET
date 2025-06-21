@@ -23,11 +23,18 @@ namespace Sample
                 .SetExpectedMaxInputLength(16)
                 .SetExceedExpectedMaxBatchesBehavior(ExceedExpectedMaxBatchesBehavior.AllocateBuffer)
                 .DownloadFromHuggingFaceRepoAsync("TrumpMcDonaldz/OverflowingTokenizer"))
-                .ModifyTokenizerConfig(x =>
+                .ModifyTokenizerConfig((ref TokenizerData x) =>
                 {
-                    x.Padding = null;
+                    x.Truncation = new()
+                    {
+                        Direction = "Right",
+                        MaxLength = 16,
+                        Strategy = "LongestFirst",
+                        Stride = 0
+                    };
 
-                    return x;
+                    x.Truncation = null;
+                    x.Padding = null;
                 })
                 .Build();
 
@@ -38,7 +45,7 @@ namespace Sample
                 // "Sunset",
                 // "I'm fine, thank you!",
                 // "I love C#!",
-                GenerateString('H', 5000),
+                GenerateString('H', 100),
             ];
 
             var outputs = tokenizer.TokenizeBatch(inputTexts);
@@ -57,7 +64,7 @@ namespace Sample
                     
                     foreach (var overflow in token.OverflowingTokens.AsReadOnlySpan())
                     {
-                        const bool SIMPLIFY = true;
+                        const bool SIMPLIFY = false;
 
                         if (SIMPLIFY)
                         {
