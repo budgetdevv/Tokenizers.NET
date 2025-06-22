@@ -8,8 +8,6 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Tests", "Tests\Tests.csproj
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Codegen", "Codegen\Codegen.csproj", "{5BDD63BD-4749-4028-9732-6BF452B058BF}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "NativeMemory", "NativeMemory\NativeMemory\NativeMemory.csproj", "{700CE6C9-F830-4221-85E2-B72CE1F3DD59}"
-EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -32,9 +30,5 @@ Global
 		{5BDD63BD-4749-4028-9732-6BF452B058BF}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{5BDD63BD-4749-4028-9732-6BF452B058BF}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{5BDD63BD-4749-4028-9732-6BF452B058BF}.Release|Any CPU.Build.0 = Release|Any CPU
-		{700CE6C9-F830-4221-85E2-B72CE1F3DD59}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{700CE6C9-F830-4221-85E2-B72CE1F3DD59}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{700CE6C9-F830-4221-85E2-B72CE1F3DD59}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{700CE6C9-F830-4221-85E2-B72CE1F3DD59}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 EndGlobal
